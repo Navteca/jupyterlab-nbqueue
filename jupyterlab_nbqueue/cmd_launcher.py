@@ -22,7 +22,10 @@ if __name__ == '__main__':
     message = ''
     try:        
         notebook = args.notebook
-        cmd_split = shlex.split(f'jupyter nbconvert --to notebook --execute ./{notebook}')
+        splitstrpath = notebook.split('/')
+        splitfile = splitstrpath[len(splitstrpath) - 1].split('.')
+        name = splitfile[0]
+        cmd_split = shlex.split(f'jupyter nbconvert --to notebook --execute ./{notebook}  --output {name}_output.ipynb')
         process = subprocess.Popen(cmd_split, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         success = True
     except subprocess.CalledProcessError as exc:
@@ -46,15 +49,16 @@ if __name__ == '__main__':
                 session.commit()
                               
                 out, error = process.communicate()
+                if error.strip() != '':
+                    # session.query(Runs).filter_by(pid=process.pid).update({'status': 'Error', 'message': error.strip()})
+                    session.query(Runs).filter_by(pid=process.pid).update({'status': 'Finished'})
 
-                # if error.strip() != '':
-                #     session.query(Runs).filter_by(pid=process.pid).update({'status': 'Error', 'message': 'ERROR'})
-
-                # if out.strip() != '':
-                #     session.query(Runs).filter_by(pid=process.pid).update({'status': 'Finished'})
-                session.query(Runs).filter_by(pid=process.pid).update({'status': 'Finished'})
+                if out.strip() != '':
+                    session.query(Runs).filter_by(pid=process.pid).update({'status': 'Finished'})
+                # session.query(Runs).filter_by(pid=process.pid).update({'status': 'Finished'})
 
                 session.commit()
             else:
+                logger.info("It has not been possible to execute the command. It must be related to the OS")
                 print("It has not been possible to execute the command. It must be related to the OS")
 
