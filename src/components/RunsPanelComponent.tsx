@@ -13,8 +13,18 @@ export const RunsPanelComponent: React.FC = (): JSX.Element => {
     RunContext
   ) as RunContextType;
 
+  const handleContextMenuClick = (event: any) => {
+    setTimeout(() => {
+      getRunsList();
+    }, 1000);
+  };
+
   useEffect(() => {
+    window.addEventListener('nbqueueRun', handleContextMenuClick);
     getRunsList();
+    return () => {
+      window.removeEventListener('nbqueueRun', handleContextMenuClick);
+    };
   }, []);
 
   const handleDelete = (event: React.MouseEvent<HTMLElement>) => {
@@ -64,7 +74,7 @@ export const RunsPanelComponent: React.FC = (): JSX.Element => {
       </Stack>
       <div>
         {runs.map(run => {
-          return <RunComponent run={run} />;
+          return <RunComponent key={run.pid} run={run} />;
         })}
       </div>
     </div>
