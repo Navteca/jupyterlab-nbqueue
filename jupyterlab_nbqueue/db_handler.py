@@ -45,6 +45,23 @@ class Runs(Base, Serializer):
     def __repr__(self):
         return f"Runs(id={self.id!r}, pid={self.pid!r}, name={self.name!r}, status={self.status!r}, message={self.message!r})"
 
+class Subscriptions(Base, Serializer):
+    __tablename__ = 'subscriptions'
+
+    id = Column(Integer, primary_key=True)
+    pid = Column(Integer, nullable=False, unique=True)
+    info = Column(String, nullable=False)
+
+    def __init__(self, pid, info):
+        self.pid = pid
+        self.info = info
+
+    def serialize(self):
+        d = Serializer.serialize(self)
+        return d
+
+    def __repr__(self):
+        return f"Subscription(id={self.id!r}, pid={self.pid!r}, info={self.info!r})"
 
 class DBHandler():
     def __init__(self):
@@ -54,12 +71,14 @@ class DBHandler():
         insp = inspect(self.engine)
         if not Path('.jupyterlab-nbqueue.db').exists() or not insp.has_table("runs", schema=Runs.metadata.schema):
             Runs.__table__.create(bind=self.engine, checkfirst=True)
+            Subscriptions.__table__.create(bind=self.engine, checkfirst=True)
 
 
     def get_session(self):
         insp = inspect(self.engine)
         if not Path('.jupyterlab-nbqueue.db').exists() or not insp.has_table("runs", schema=Runs.metadata.schema):
             Runs.__table__.create(bind=self.engine, checkfirst=True)
+            Subscriptions.__table__.create(bind=self.engine, checkfirst=True)
         
         return self.session
         

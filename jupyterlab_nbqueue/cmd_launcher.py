@@ -1,13 +1,18 @@
+import json
+import logging
+import os
 import subprocess
 import shlex
-import logging
 
-from pathlib import Path
 from argparse import ArgumentParser
-from db_handler import Runs, DBHandler
+from db_handler import Runs, Subscriptions, DBHandler
+from pywebpush import webpush
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY")
+VAPID_CLAIM_EMAIL = os.getenv("VAPID_CLAIM_EMAIL")
 
 class Error(Exception):
     pass
@@ -62,3 +67,16 @@ if __name__ == '__main__':
                 logger.info("It has not been possible to execute the command. It must be related to the OS")
                 print("It has not been possible to execute the command. It must be related to the OS")
 
+        with db.get_session() as session:
+            title = 'jupyterlab-nbqueue'
+            body = f'Notebook {notebook} execution finished.'
+            subscription = session.query(Subscriptions).filter(Subscriptions.pid == 'S001').first()                
+            if subscription:
+                response = webpush(
+                    subscription_info=json.loads(subscription.__dict__['info']),
+                    data=json.dumps({"title": title, "body": body}),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={
+                        "sub": "mailto:{}".format(VAPID_CLAIM_EMAIL)
+                    }
+                )
