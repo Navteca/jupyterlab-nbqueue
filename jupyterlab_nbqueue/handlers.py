@@ -2,6 +2,9 @@ import json
 
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
+
+from jupyterlab_nbqueue.nbqueue_handler import NBQueueHandler
+
 import tornado
 
 class RouteHandler(APIHandler):
@@ -17,8 +20,12 @@ class RouteHandler(APIHandler):
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
-
+    app_name = "jupyterlab-nbqueue"
     base_url = web_app.settings["base_url"]
-    route_pattern = url_path_join(base_url, "jupyterlab-nbqueue", "get-example")
-    handlers = [(route_pattern, RouteHandler)]
+    route_pattern = url_path_join(base_url, app_name, "get-example")
+    nbqueue_handler = url_path_join(base_url, app_name, "nbqueue/submit")
+    handlers = [
+        (route_pattern, RouteHandler),
+        (nbqueue_handler, NBQueueHandler),
+    ]    
     web_app.add_handlers(host_pattern, handlers)
