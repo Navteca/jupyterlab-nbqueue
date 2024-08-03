@@ -6,6 +6,13 @@ import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { buildIcon } from '@jupyterlab/ui-components';
 import { NBQueueWidget } from "./widgets/NBQueueWidget";
 import { Widget } from '@lumino/widgets';
+import { IDisposable, DisposableDelegate } from '@lumino/disposable';
+import { ToolbarButton } from '@jupyterlab/apputils';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
+import {
+  NotebookPanel,
+  INotebookModel,
+} from '@jupyterlab/notebook';
 
 const activate = (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
   console.log('JupyterLab extension jupyterlab-nbqueue is activated!');
@@ -19,7 +26,6 @@ const activate = (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
         ?.selectedItems()
         .next().value;
 
-      console.log(file)
       if (file) {
         const widget = new NBQueueWidget(file);
         widget.title.label = "NBQueue metadata";
@@ -33,6 +39,8 @@ const activate = (app: JupyterFrontEnd, factory: IFileBrowserFactory) => {
     selector: ".jp-DirListing-item[data-file-type=\"notebook\"]",
     rank: 0
   });
+
+  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
 }
 
 /**
@@ -45,5 +53,30 @@ const plugin: JupyterFrontEndPlugin<void> = {
   requires: [IFileBrowserFactory],
   activate
 };
+
+export class ButtonExtension
+  implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
+  createNew(
+    panel: NotebookPanel,
+    context: DocumentRegistry.IContext<INotebookModel>
+  ): IDisposable {
+    const sendToQueue = () => {
+      const widget = new NBQueueWidget(context.contentsModel);
+      widget.title.label = "NBQueue metadata";
+      Widget.attach(widget, document.body);
+    };
+    const button = new ToolbarButton({
+      className: 'nbqueue-submit',
+      label: 'NBQueue: Send to queue',
+      onClick: sendToQueue,
+      tooltip: 'Send notebook to execution queue',
+    });
+
+    panel.toolbar.insertItem(10, 'clearOutputs', button);
+    return new DisposableDelegate(() => {
+      button.dispose();
+    });
+  }
+}
 
 export default plugin;
