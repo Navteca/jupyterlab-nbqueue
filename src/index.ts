@@ -85,7 +85,7 @@ const activate = async (app: JupyterFrontEnd, factory: IFileBrowserFactory, pale
     rank: 0
   });
 
-  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());  
+  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension(settings));
 }
 
 /**
@@ -101,20 +101,27 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
 export class ButtonExtension
   implements DocumentRegistry.IWidgetExtension<NotebookPanel, INotebookModel> {
+
+  settings: ISettingRegistry
+  constructor(settings: ISettingRegistry) {
+    this.settings = settings;
+  }
+
   createNew(
     panel: NotebookPanel,
     context: DocumentRegistry.IContext<INotebookModel>
   ): IDisposable {
     const sendToQueue = async () => {
       let s3BucketId = ''
-      // await Promise.all([settings.load(PLUGIN_ID)])
-      //   .then(([setting]) => {
-      //     s3BucketId = loadSetting(setting);
-      //   }).catch((reason) => {
-      //     console.error(
-      //       `Something went wrong when getting the current atlas id.\n${reason}`
-      //     );
-      //   });
+      await Promise.all([this.settings.load(PLUGIN_ID)])
+        .then(([setting]) => {
+          s3BucketId = loadSetting(setting);
+          console.log(s3BucketId);
+        }).catch((reason) => {
+          console.error(
+            `Something went wrong when getting the current atlas id.\n${reason}`
+          );
+        });
 
       if (_.isEqual(s3BucketId, "")) {
         Notification.warning('S3 Bucket is not configured')
