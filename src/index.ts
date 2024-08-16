@@ -6,7 +6,7 @@ import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { runIcon } from '@jupyterlab/ui-components';
 import { NBQueueWidget } from "./widgets/NBQueueWidget";
-import { Widget, Menu } from '@lumino/widgets';
+import { Widget } from '@lumino/widgets';
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 import { ICommandPalette, MainAreaWidget, Notification, ToolbarButton } from '@jupyterlab/apputils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
@@ -15,7 +15,6 @@ import {
   INotebookModel,
 } from '@jupyterlab/notebook';
 import { NBQueueSideBarWidget } from './widgets/NBQueueSideBarWidget';
-import { NBQueueBucketWidget } from './widgets/NBQueueBucketWidget';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { loadSetting } from './utils';
 import _ from 'lodash'
@@ -86,69 +85,7 @@ const activate = async (app: JupyterFrontEnd, factory: IFileBrowserFactory, pale
     rank: 0
   });
 
-  const command = 'jupyterlab-nbqueue:bucket';
-  app.commands.addCommand(command, {
-    label: 'NBQueue: Set AWS S3 Bucket Name',
-    caption: 'NBQueue: Set AWS S3 Bucket Name',
-    execute: () => {
-      const widget = new NBQueueBucketWidget();
-      widget.title.label = "NBQueue S3 Bucket Name";
-      Widget.attach(widget, document.body);
-    }
-  });
-
-  const category = 'NBQueue';
-  palette.addItem({
-    command,
-    category,
-    args: { origin: 'from the palette' }
-  });
-
-  const menu = new Menu({ commands: app.commands });
-  menu.title.label = "NBQueue";
-  menu.addItem({
-    command,
-    args: { origin: 'from the main menu' }
-  });
-
-  mainMenu.addMenu(menu, true, { rank: 80 });
-
-  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());
-
-  // const options = ['one', 'two', 'three'];
-  // let option = options[0];
-  // app.restored
-  // // Get the state object
-  // .then(() => state.fetch('jupyterlab-nbqueue:plugin'))
-  // .then(value => {
-  //   // Get the option attribute
-  //   if (value) {
-  //     option = (value as ReadonlyJSONObject)['option'] as string;
-  //     console.log(`Option ${option} read from state.`);
-  //   }
-
-  //   // Ask the user to pick a option with `option` as default
-  //   return InputDialog.getItem({
-  //     title: 'Pick an option to persist by the State Example extension',
-  //     items: options,
-  //     current: Math.max(0, options.indexOf(option))
-  //   });
-  // })
-  // .then(result => {
-  //   // If the user click on the accept button of the dialog
-  //   if (result.button.accept) {
-  //     // Get the user option
-  //     option = result.value || '';
-  //     console.log(`Option "${option}" selected.`);
-  //     // Save the option in the state database
-  //     return state.save('jupyterlab-nbqueue:plugin', { option });
-  //   }
-  // })
-  // .catch(reason => {
-  //   console.error(
-  //     `Something went wrong when reading the state for ${'jupyterlab-nbqueue:plugin'}.\n${reason}`
-  //   );
-  // });  
+  app.docRegistry.addWidgetExtension('Notebook', new ButtonExtension());  
 }
 
 /**
@@ -178,12 +115,12 @@ export class ButtonExtension
       //       `Something went wrong when getting the current atlas id.\n${reason}`
       //     );
       //   });
-    
+
       if (_.isEqual(s3BucketId, "")) {
         Notification.warning('S3 Bucket is not configured')
         return;
       }
-    
+
       const widget = new NBQueueWidget(context.contentsModel, s3BucketId);
       widget.title.label = "NBQueue metadata";
       Widget.attach(widget, document.body);

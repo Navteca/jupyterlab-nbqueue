@@ -5,6 +5,7 @@ import {
      DialogActions,
      DialogContent,
      DialogContentText,
+     DialogProps,
      DialogTitle,
      FormControl,
      InputLabel,
@@ -33,6 +34,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
      const [kernel, setKernel] = React.useState<string>('');
      const [condas, setCondas] = React.useState<any[]>([]);
      const [conda, setConda] = React.useState<string>('');
+     const [fullWidth] = React.useState(true);
+     const [maxWidth] = React.useState<DialogProps['maxWidth']>('md');
 
      const handleCondaChange = (event: SelectChangeEvent) => {
           setConda(event.target.value as string);
@@ -66,6 +69,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                <Dialog
                     open={open}
                     onClose={handleClose}
+                    fullWidth={fullWidth}
+                    maxWidth={maxWidth}                    
                     PaperProps={{
                          component: 'form',
                          onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
