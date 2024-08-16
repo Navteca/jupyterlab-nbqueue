@@ -1,0 +1,15 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "NBQueue Settings",
+  "description": "NBQueue for JupyterLab Settings.",
+  "type": "object",
+  "properties": {
+    "s3BucketId": {
+      "type": "string",
+      "title": "S3 Bucket ID",
+      "description": "This is the S3 Bucket ID NBQueue will use for sending files to AWS S3.",
+      "default": ""
+    }
+  },
+  "additionalProperties": false
+}

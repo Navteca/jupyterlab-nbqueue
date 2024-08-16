@@ -19,7 +19,8 @@
     "files": [
         "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
         "style/**/*.{css,js,eot,gif,html,jpg,json,png,svg,woff2,ttf}",
-        "src/**/*.{ts,tsx}"
+        "src/**/*.{ts,tsx}",
+        "schema/*.json"
     ],
     "main": "lib/index.js",
     "types": "lib/index.d.ts",
@@ -62,9 +63,19 @@
         "@jupyterlab/apputils": "^4.3.4",
         "@jupyterlab/coreutils": "^6.0.0",
         "@jupyterlab/filebrowser": "^4.2.4",
+        "@jupyterlab/mainmenu": "^4.2.4",
         "@jupyterlab/services": "^7.0.0",
+        "@jupyterlab/settingregistry": "^4.2.4",
+        "@jupyterlab/statedb": "^4.2.4",
         "@jupyterlab/ui-components": "^4.2.4",
-        "@mui/material": "^5.16.6"
+        "@lumino/coreutils": "^2.2.0",
+        "@mui/icons-material": "^5.16.6",
+        "@mui/material": "^5.16.6",
+        "@types/lodash": "^4.17.7",
+        "install": "^0.13.0",
+        "lodash": "^4.17.21",
+        "lodash.isempty": "^4.4.0",
+        "npm": "^10.8.2"
     },
     "devDependencies": {
         "@jupyterlab/builder": "^4.0.0",
@@ -114,7 +125,8 @@
             }
         },
         "extension": true,
-        "outputDir": "jupyterlab_nbqueue/labextension"
+        "outputDir": "jupyterlab_nbqueue/labextension",
+        "schemaDir": "schema"
     },
     "eslintIgnore": [
         "node_modules",

@@ -1,49 +1,64 @@
-import { Button, CssBaseline, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, TextField } from '@mui/material'
-import React from 'react'
+import {
+     Button,
+     CssBaseline,
+     Dialog,
+     DialogActions,
+     DialogContent,
+     DialogContentText,
+     DialogTitle,
+     FormControl,
+     InputLabel,
+     MenuItem,
+     Select,
+     SelectChangeEvent,
+     TextField
+} from '@mui/material';
+import React, { useEffect } from 'react';
 import { requestAPI } from '../handler';
+import { Notification } from '@jupyterlab/apputils';
 
 interface NBQueueComponentProps {
-     file: string
+     file: string;
+     bucket: string;
 }
 
-const NBQueueComponent: React.FC<NBQueueComponentProps> = (props): JSX.Element => {
+const NBQueueComponent: React.FC<NBQueueComponentProps> = (
+     props
+): JSX.Element => {
      const [open, setOpen] = React.useState(true);
-     const [image, setImage] = React.useState('image01');
+     // const [image, setImage] = React.useState('image01');
      const [file] = React.useState(props.file);
-     const [images] = React.useState([
-          {
-               id: 'image01',
-               name: 'Image 01'
-          },
-          {
-               id: 'image02',
-               name: 'Image 02'
-          },
-          {
-               id: 'image03',
-               name: 'Image 03'
-          }
-     ]);
+     const [bucket] = React.useState(props.bucket);
+     const [kernels, setKernels] = React.useState<any[]>([]);
+     const [kernel, setKernel] = React.useState<string>('');
+     const [condas, setCondas] = React.useState<any[]>([]);
+     const [conda, setConda] = React.useState<string>('');
 
-     const handleChange = (event: SelectChangeEvent) => {
-          setImage(event.target.value as string);
+     const handleCondaChange = (event: SelectChangeEvent) => {
+          setConda(event.target.value as string);
+     };
+
+     const handleKernelChange = (event: SelectChangeEvent) => {
+          setKernel(event.target.value as string);
      };
 
      const handleClose = () => {
           setOpen(false);
      };
 
-     const handleSubmit = async () => {
-          const response = await requestAPI<any>('nbqueue/submit', {
-               method: 'POST',
-               body: JSON.stringify({
-                    file
-               })
-          })
+     useEffect(() => {
+          getKernels();
+          getCondaEnvs();
+     }, []);
 
-          console.log(response)
+     const getKernels = async (): Promise<void> => {
+          const response = await requestAPI<any>('kernels');
+          setKernels(Object.keys(response.kernelspecs));
+     };
 
-          setOpen(false);
+     const getCondaEnvs = async (): Promise<void> => {
+          const response = await requestAPI<any>('conda');
+          setCondas(response.envs);
      };
 
      return (
@@ -53,14 +68,51 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (props): JSX.Element =
                     onClose={handleClose}
                     PaperProps={{
                          component: 'form',
-                         onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+                         onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
                               event.preventDefault();
                               const formData = new FormData(event.currentTarget);
                               const formJson = Object.fromEntries((formData as any).entries());
-                              const email = formJson.email;
-                              console.log(email);
+                              console.log(conda);
+                              console.log(kernel);
+                              console.log(formJson);
+
+                              Notification.promise(
+                                   requestAPI<any>('workflow', {
+                                        method: 'POST',
+                                        body: JSON.stringify({
+                                             file,
+                                             cpu: formJson['cpu-number'],
+                                             ram: formJson['ram-number'],
+                                             bucket,
+                                             conda,
+                                             kernel
+                                        })
+                                   }),
+                                   {
+                                        pending: {
+                                             message: 'Sendind files to AWS',
+                                             options: { autoClose: 3000 }
+                                        },
+                                        /**
+                                         * If not set `options.data` will be set to the promise result.
+                                         */
+                                        success: {
+                                             message: (result, data) => 'Files sent successfully',
+                                             options: { autoClose: 3000 }
+                                        },
+                                        /**
+                                         * If not set `options.data` will be set to the promise rejection error.
+                                         */
+                                        error: {
+                                             message: (reason, data) =>
+                                                  `Error sending files. Reason: ${reason}`,
+                                             options: { autoClose: 3000 }
+                                        }
+                                   }
+                              );
+
                               handleClose();
-                         },
+                         }
                     }}
                >
                     <DialogTitle>Parameters</DialogTitle>
@@ -76,7 +128,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (props): JSX.Element =
                               defaultValue="2"
                               label="CPU"
                               InputLabelProps={{
-                                   shrink: true,
+                                   shrink: true
                               }}
                               variant="standard"
                               margin="dense"
@@ -91,34 +143,49 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (props): JSX.Element =
                               defaultValue="2"
                               label="RAM"
                               InputLabelProps={{
-                                   shrink: true,
+                                   shrink: true
                               }}
                               variant="standard"
                               margin="dense"
                               fullWidth
                          />
-                         <FormControl fullWidth variant="standard">
-                              <InputLabel id="image-name">Image</InputLabel>
+                         <FormControl required fullWidth variant="standard">
+                              <InputLabel id="conda-env">Conda Environment</InputLabel>
                               <Select
-                                   required
-                                   labelId="image-name"
-                                   id="image-name"
-                                   value={image}
-                                   label="Image"
-                                   onChange={handleChange}
+                                   labelId="conda-env"
+                                   id="conda-env"
+                                   value={conda}
+                                   label="Conda env"
+                                   onChange={handleCondaChange}
                               >
-                                   {images.map(img => <MenuItem value={img.id}>{img.name}</MenuItem>)}
+                                   {condas.map(condaEnv => (
+                                        <MenuItem value={condaEnv}>{condaEnv}</MenuItem>
+                                   ))}
+                              </Select>
+                         </FormControl>
+                         <FormControl required fullWidth variant="standard">
+                              <InputLabel id="kernel">Kernel</InputLabel>
+                              <Select
+                                   labelId="kernel"
+                                   id="kernel"
+                                   value={kernel}
+                                   label="Kernel"
+                                   onChange={handleKernelChange}
+                              >
+                                   {kernels.map(kernelenv => (
+                                        <MenuItem value={kernelenv}>{kernelenv}</MenuItem>
+                                   ))}
                               </Select>
                          </FormControl>
                     </DialogContent>
                     <DialogActions>
                          <Button onClick={handleClose}>Cancel</Button>
-                         <Button onClick={handleSubmit}>Send</Button>
+                         <Button type="submit">Send</Button>
                     </DialogActions>
                </Dialog>
-          </React.Fragment >
+          </React.Fragment>
      );
-}
+};
 
 export default NBQueueComponent;
-<CssBaseline />
+<CssBaseline />;
