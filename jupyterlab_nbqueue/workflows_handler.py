@@ -1,6 +1,8 @@
 import json
 import logging
 import sys
+import os
+import re
 from logging import Logger
 
 import boto3
@@ -47,16 +49,15 @@ class WorkflowsHandler(APIHandler):
                 verify=False,
             )
 
+            user = os.environ["USER"]
             session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
             s3_client = session.client(
                 service_name="s3",
             )
 
-            aws_response = s3_client.list_objects_v2(Bucket=bucket, Prefix="luisleon/apiBakerTest03/workflows/")
-
-            workflows: list[any]
-            if "Contents" in aws_response:
-                workflows_raw = aws_response["Contents"]
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=user)
+            if "Contents" in response:
+                workflows_raw = response["Contents"]
             else:
                 print("Folder is empty.")
 
@@ -65,35 +66,19 @@ class WorkflowsHandler(APIHandler):
                     map(
                         lambda workflow: {
                             "name": workflow["Key"],
-                            "status": 'Succeeded',
+                            "status": "Succeeded",
                         },
-                        workflows_raw,
+                        (
+                            filter(
+                                lambda workflow: workflow["Key"].endswith("log"),
+                                workflows_raw,
+                            )
+                        ),
                     )
                 )
                 if workflows_raw
                 else []
             )
-
-            # response_dict = response.json()
-            # workflows_raw = response_dict["items"]
-            # workflows = (
-            #     list(
-            #         map(
-            #             lambda workflow: {
-            #                 "name": workflow["metadata"]["name"],
-            #                 "creationTimestamp": workflow["metadata"][
-            #                     "creationTimestamp"
-            #                 ],
-            #                 "status": workflow["status"]["phase"],
-            #                 "startedAt": workflow["status"]["startedAt"],
-            #                 "finishedAt": workflow["status"]["finishedAt"],
-            #             },
-            #             workflows_raw,
-            #         )
-            #     )
-            #     if workflows_raw
-            #     else []
-            # )
 
         except Exception as exc:
             logger.error(

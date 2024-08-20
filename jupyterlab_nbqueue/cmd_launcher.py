@@ -11,13 +11,11 @@ from argparse import ArgumentParser
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-from .common.variables import (
-    AWS_CREDENTIALS_PROFILE,
-)
 
+# from .common.variables import AWS_CREDENTIALS_PROFILE
 @functools.lru_cache()
 def _get_signed_s3_client():
-    session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+    session = boto3.Session(profile_name="navteca")
     s3 = session.client(
         service_name="s3",
     )
@@ -26,7 +24,7 @@ def _get_signed_s3_client():
 
 @functools.lru_cache()
 def _get_unsigned_s3_client():
-    session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+    session = boto3.Session(profile_name="navteca")
     s3 = session.client(
         service_name="s3",
     )

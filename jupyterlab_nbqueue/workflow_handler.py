@@ -154,29 +154,12 @@ class WorkflowHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            # headers = {
-            #     "Content-Type": "application/json",
-            #     "Authorization": ARGO_TOKEN,
-            # }
-
-            # logger.error(
-            #     GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name)
-            # )
-            # response = requests.get(
-            #     GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name),
-            #     headers=headers,
-            #     verify=False,
-            # )
-
-            print("***********************\n")
             session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
             s3_client = session.client(
                 service_name="s3",
             )
-            response = s3_client.get_object(Bucket=bucket, Key='luisleon/apiBakerTest03/workflows/retry-on-error-j624m.log')
+            response = s3_client.get_object(Bucket=bucket, Key=workflow_name)
             object_content = response["Body"].read().decode("utf-8")
-            print(object_content, end="\n\n")
-            print("***********************\n")
         except Exception as exc:
             logger.error(
                 f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
@@ -195,28 +178,10 @@ class WorkflowHandler(APIHandler):
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": ARGO_TOKEN,
-            }
-
-            logger.error(
-                DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name)
-            )
-            response = requests.delete(
-                DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name),
-                headers=headers,
-                verify=False,
-            )
-
-            response_dict = response.json()
-            logger.error(response_dict)
-
-            message = response_dict["message"] if "message" in response_dict else None
         except Exception as exc:
             logger.error(
                 f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
             )
         else:
-            self.set_status(response.status_code)
-            self.finish(message if response.status_code != 200 else None)
+            self.set_status(201)
+            self.finish(None)
