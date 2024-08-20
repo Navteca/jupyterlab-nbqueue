@@ -7,14 +7,9 @@ import {
      DialogContentText,
      DialogProps,
      DialogTitle,
-     FormControl,
-     InputLabel,
-     MenuItem,
-     Select,
-     SelectChangeEvent,
      TextField
 } from '@mui/material';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { requestAPI } from '../handler';
 import { Notification } from '@jupyterlab/apputils';
 
@@ -30,38 +25,11 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
      // const [image, setImage] = React.useState('image01');
      const [file] = React.useState(props.file);
      const [bucket] = React.useState(props.bucket);
-     const [kernels, setKernels] = React.useState<any[]>([]);
-     const [kernel, setKernel] = React.useState<string>('');
-     const [condas, setCondas] = React.useState<any[]>([]);
-     const [conda, setConda] = React.useState<string>('');
      const [fullWidth] = React.useState(true);
      const [maxWidth] = React.useState<DialogProps['maxWidth']>('md');
 
-     const handleCondaChange = (event: SelectChangeEvent) => {
-          setConda(event.target.value as string);
-     };
-
-     const handleKernelChange = (event: SelectChangeEvent) => {
-          setKernel(event.target.value as string);
-     };
-
      const handleClose = () => {
           setOpen(false);
-     };
-
-     useEffect(() => {
-          getKernels();
-          getCondaEnvs();
-     }, []);
-
-     const getKernels = async (): Promise<void> => {
-          const response = await requestAPI<any>('kernels');
-          setKernels(Object.keys(response.kernelspecs));
-     };
-
-     const getCondaEnvs = async (): Promise<void> => {
-          const response = await requestAPI<any>('conda');
-          setCondas(response.envs);
      };
 
      return (
@@ -77,8 +45,6 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               event.preventDefault();
                               const formData = new FormData(event.currentTarget);
                               const formJson = Object.fromEntries((formData as any).entries());
-                              console.log(conda);
-                              console.log(kernel);
                               console.log(formJson);
 
                               Notification.promise(
@@ -89,8 +55,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                                              cpu: formJson['cpu-number'],
                                              ram: formJson['ram-number'],
                                              bucket,
-                                             conda,
-                                             kernel
+                                             conda: formJson['conda-environment'],
+                                             container: formJson['container-image'],
                                         })
                                    }),
                                    {
@@ -129,12 +95,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="cpu-number"
                               name="cpu-number"
-                              type="number"
-                              defaultValue="2"
+                              defaultValue="1000"
                               label="CPU"
-                              InputLabelProps={{
-                                   shrink: true
-                              }}
                               variant="standard"
                               margin="dense"
                               fullWidth
@@ -144,44 +106,32 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="ram-number"
                               name="ram-number"
-                              type="number"
-                              defaultValue="2"
+                              defaultValue="256"
                               label="RAM"
-                              InputLabelProps={{
-                                   shrink: true
-                              }}
                               variant="standard"
                               margin="dense"
                               fullWidth
                          />
-                         <FormControl required fullWidth variant="standard">
-                              <InputLabel id="conda-env">Conda Environment</InputLabel>
-                              <Select
-                                   labelId="conda-env"
-                                   id="conda-env"
-                                   value={conda}
-                                   label="Conda env"
-                                   onChange={handleCondaChange}
-                              >
-                                   {condas.map(condaEnv => (
-                                        <MenuItem value={condaEnv}>{condaEnv}</MenuItem>
-                                   ))}
-                              </Select>
-                         </FormControl>
-                         <FormControl required fullWidth variant="standard">
-                              <InputLabel id="kernel">Kernel</InputLabel>
-                              <Select
-                                   labelId="kernel"
-                                   id="kernel"
-                                   value={kernel}
-                                   label="Kernel"
-                                   onChange={handleKernelChange}
-                              >
-                                   {kernels.map(kernelenv => (
-                                        <MenuItem value={kernelenv}>{kernelenv}</MenuItem>
-                                   ))}
-                              </Select>
-                         </FormControl>
+                         <TextField
+                              required
+                              id="container-image"
+                              name="container-image"
+                              defaultValue="466270585360.dkr.ecr.us-west-2.amazonaws.com/oss-jlab-apibaker-beta:20240730111854"
+                              label="Container Image"
+                              variant="standard"
+                              margin="dense"
+                              fullWidth
+                         />
+                         <TextField
+                              required
+                              id="conda-environment"
+                              name="conda-environment"
+                              defaultValue="python3"
+                              label="Conda environment"
+                              variant="standard"
+                              margin="dense"
+                              fullWidth
+                         />
                     </DialogContent>
                     <DialogActions>
                          <Button onClick={handleClose}>Cancel</Button>

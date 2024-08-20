@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import sys
 import os
+import boto3
 
 from logging import Logger
 from shutil import which
@@ -24,6 +25,7 @@ from .common.variables import (
     ARGO_TOKEN,
     DELETE_WORKFLOW,
     SOURCE,
+    AWS_CREDENTIALS_PROFILE,
 )
 
 logger: Logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ class WorkflowHandler(APIHandler):
     def post(self):
         try:
             json_body = self.get_json_body()
+            logger.error(json_body)
             if json_body is None:
                 raise Exception("Request body is missing.")
             if json_body["file"] is None:
@@ -51,9 +54,9 @@ class WorkflowHandler(APIHandler):
             if json_body["bucket"] is None:
                 raise Exception("S3 Bucket ID parameter is missing.")
             if json_body["conda"] is None:
-                raise Exception("Conda parameter is missing.")
-            if json_body["kernel"] is None:
-                raise Exception("Kernel parameter is missing.")
+                raise Exception("Conda environment parameter is missing.")
+            if json_body["container"] is None:
+                raise Exception("Container image parameter is missing.")
 
             file = json_body["file"]["name"]
             path = json_body["file"]["path"]
@@ -61,10 +64,9 @@ class WorkflowHandler(APIHandler):
             ram = json_body["ram"]
             bucket = json_body["bucket"]
             conda = json_body["conda"]
-            kernel = json_body["kernel"]
+            container = json_body["container"]
+            user = os.environ["USER"]
 
-            logger.error(json_body)
-            
             file_name, file_extension = os.path.splitext(file)
             file_path, file_extension = os.path.splitext(path)
 
@@ -85,10 +87,10 @@ class WorkflowHandler(APIHandler):
                 logger.error("Uploading notebook to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
                     logger.error(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {file_name}/{file_name}{file_extension} {cpu} {ram}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {user}/{file_name}/input/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {file_name}/{file_name}{file_extension} {cpu} {ram}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {user}/{file_name}/input/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
                     )
                     process = subprocess.Popen(
                         cmd_split, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -101,15 +103,15 @@ class WorkflowHandler(APIHandler):
                             logger.error(out)
 
                         if error:
-                            logger.error(error)                    
+                            logger.error(error)
 
                 logger.error("Uploading conda environment file to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
                     logger.error(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {file_name}/{file_name}.yaml {cpu} {ram}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {user}/{file_name}/input/{file_name}.yaml {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {file_name}/{file_name}.yaml {cpu} {ram}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {user}/{file_name}/input/{file_name}.yaml {cpu} {ram} {conda} {container}"
                     )
                     process = subprocess.Popen(
                         cmd_split, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -144,6 +146,51 @@ class WorkflowHandler(APIHandler):
         try:
             workflow_name = get_request_attr_value(self, "workflow_name")
             logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            bucket = get_request_attr_value(self, "bucket")
+            logger.error(f"bucket => {type(bucket)} {bucket}")
+
+            if not workflow_name:
+                raise Exception("The request to the extension backend is not valid")
+            if not bucket:
+                raise Exception("The request to the extension backend is not valid")
+
+            # headers = {
+            #     "Content-Type": "application/json",
+            #     "Authorization": ARGO_TOKEN,
+            # }
+
+            # logger.error(
+            #     GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name)
+            # )
+            # response = requests.get(
+            #     GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name),
+            #     headers=headers,
+            #     verify=False,
+            # )
+
+            print("***********************\n")
+            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            s3_client = session.client(
+                service_name="s3",
+            )
+            response = s3_client.get_object(Bucket=bucket, Key='luisleon/apiBakerTest03/workflows/retry-on-error-j624m.log')
+            object_content = response["Body"].read().decode("utf-8")
+            print(object_content, end="\n\n")
+            print("***********************\n")
+        except Exception as exc:
+            logger.error(
+                f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
+            )
+        else:
+            self.status_code = 200
+            self.finish(object_content if object_content else "")
+
+    @tornado.web.authenticated
+    def delete(self):
+        logger.error("Deleting a workflow by name")
+        try:
+            workflow_name = get_request_attr_value(self, "workflow_name")
+            logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
 
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")
@@ -154,68 +201,22 @@ class WorkflowHandler(APIHandler):
             }
 
             logger.error(
-                GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name)
+                DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name)
             )
-            response = requests.get(
-                GET_WORKFLOW_LOG.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name),
-                headers=headers,
-                verify=False,
-            )
-        except Exception as exc:
-            logger.error(
-                f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
-            )
-        else:
-            self.status_code = 200
-            self.finish(response.text if response.text else "")
-
-    @tornado.web.authenticated
-    def delete(self):
-        logger.error("Getting all workflows from endpoint")
-        try:
-            workflowName = get_request_attr_value(self, "workflowName")
-            logger.error(f"workflowName => {type(workflowName)} {workflowName}")
-
-            if not workflowName:
-                raise Exception("The request to the extension backend is not valid")
-
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": ARGO_TOKEN,
-            }
-
-            logger.error(DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE))
-            response = requests.get(
-                DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE),
+            response = requests.delete(
+                DELETE_WORKFLOW.format(ARGO_WORKFLOWS_NAMESPACE, workflow_name),
                 headers=headers,
                 verify=False,
             )
 
             response_dict = response.json()
-            workflows_raw = response_dict["items"]
-            workflows = (
-                list(
-                    map(
-                        lambda workflow: {
-                            "name": workflow["metadata"]["name"],
-                            "creationTimestamp": workflow["metadata"][
-                                "creationTimestamp"
-                            ],
-                            "status": workflow["status"]["phase"],
-                            "startedAt": workflow["status"]["startedAt"],
-                            "finishedAt": workflow["status"]["finishedAt"],
-                        },
-                        workflows_raw,
-                    )
-                )
-                if workflows_raw
-                else []
-            )
+            logger.error(response_dict)
 
+            message = response_dict["message"] if "message" in response_dict else None
         except Exception as exc:
             logger.error(
                 f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
             )
         else:
-            self.status_code = 200
-            self.finish(json.dumps(workflows) if workflows else [])
+            self.set_status(response.status_code)
+            self.finish(message if response.status_code != 200 else None)

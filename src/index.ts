@@ -23,7 +23,12 @@ const PLUGIN_ID = 'jupyterlab-nbqueue:plugin'
 
 const activate = async (app: JupyterFrontEnd, factory: IFileBrowserFactory, palette: ICommandPalette, mainMenu: IMainMenu, settings: ISettingRegistry) => {
   console.log('JupyterLab extension jupyterlab-nbqueue is activated!');
-
+  const user = app.serviceManager.user;
+  user.ready.then(() => {
+     console.debug("Identity:", user.identity);
+     console.debug("Permissions:", user.permissions);
+  });  
+  
   let s3BucketId = ''
   await Promise.all([settings.load(PLUGIN_ID)])
     .then(([setting]) => {
@@ -39,7 +44,7 @@ const activate = async (app: JupyterFrontEnd, factory: IFileBrowserFactory, pale
     return;
   }
 
-  const sideBarContent = new NBQueueSideBarWidget();
+  const sideBarContent = new NBQueueSideBarWidget(s3BucketId);
   const sideBarWidget = new MainAreaWidget<NBQueueSideBarWidget>({
     content: sideBarContent
   });

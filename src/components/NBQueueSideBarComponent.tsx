@@ -26,7 +26,12 @@ const Transition = React.forwardRef(function Transition(
      return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
+interface NBQueueSideBarComponentProps {
+     bucket: string;
+}
+
+const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props): JSX.Element => {
+     const [bucket] = React.useState(props.bucket);
      const [dense] = React.useState(true)
      const [workflows, setWorkflows] = React.useState<Workflow[]>([])
      const [workflowName, setWorkflowName] = React.useState('');
@@ -56,7 +61,7 @@ const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
      }
 
      const getWorkflows = async () => {
-          const wf = await requestAPI<any>('workflows', {
+          const wf = await requestAPI<any>('workflows?bucket=' + bucket, {
                method: 'GET'
           })
 
@@ -64,8 +69,8 @@ const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
           setWorkflows(wf)
      };
 
-     const getWorkflowLog = async (workflowName: string) => {
-          const logs = await requestAPI<any>('workflow?workflow_name=' + workflowName, {
+     const getWorkflowLog = async (workflowName: string, bucket: string) => {
+          const logs = await requestAPI<any>('workflow?workflow_name=' + workflowName + '&bucket=' + bucket, {
                method: 'GET'
           })
           console.log(logs)
@@ -81,9 +86,9 @@ const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
      //      getWorkflowLog(event.currentTarget.id)
      // };
 
-     const handleLogClick = (scrollType: DialogProps['scroll'], workflowName: string) => async () => {
+     const handleLogClick = (scrollType: DialogProps['scroll'], workflowName: string, bucket: string) => async () => {
           try {
-               const logs = await getWorkflowLog(workflowName)
+               const logs = await getWorkflowLog(workflowName, bucket)
 
                console.log(`Endpoint Workflow log Result => ${logs}`)
                setContentLog(logs)
@@ -96,7 +101,7 @@ const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
           console.log(`Workflow Name => ${workflowName}`)
           setOpen(true);
           setScroll(scrollType);
-          getWorkflowLog(workflowName)
+          // getWorkflowLog(workflowName, bucket)
      };
 
      const handleClose = () => {
@@ -151,7 +156,7 @@ const NBQueueSideBarComponent: React.FC = (props): JSX.Element => {
                                                   secondary={workflow.status}
                                              />
                                              <ListItemSecondaryAction>
-                                                  <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleLogClick('paper', workflow.name)}>
+                                                  <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleLogClick('paper', workflow.name, bucket)}>
                                                        <Visibility />
                                                   </IconButton>
                                                   <IconButton edge="end" aria-label="view logs" id={workflow.name}>

@@ -1,25 +1,19 @@
 import subprocess
-import shlex
 import logging
-import os
 import boto3
-import math
-import psutil
 import functools
 from urllib import parse
 from shutil import which
 from pathlib import Path
 from botocore import exceptions
 from argparse import ArgumentParser
-from botocore import UNSIGNED
-from botocore.config import Config
-from typing import Union
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-AWS_CREDENTIALS_PROFILE = "navteca"
-
+from .common.variables import (
+    AWS_CREDENTIALS_PROFILE,
+)
 
 @functools.lru_cache()
 def _get_signed_s3_client():
@@ -86,6 +80,8 @@ if __name__ == "__main__":
     parser.add_argument("file_name", type=str)
     parser.add_argument("cpu", type=str)
     parser.add_argument("ram", type=str)
+    parser.add_argument("conda", type=str)
+    parser.add_argument("container", type=str)
     args = parser.parse_args()
     process = None
     bucket = None
@@ -110,9 +106,11 @@ if __name__ == "__main__":
         filepath = args.file_path
         cpu = args.cpu
         ram = args.ram
+        conda = args.conda
+        container = args.container
 
         logger.error(f"LOCAL_FILE={filepath}")
-        tags = {"CPU": cpu, "RAM": ram}
+        tags = {"CPU": cpu, "RAM": ram, "CONDA": conda, "CONTAINER": container}
         response = s3_client.upload_file(
             filepath,
             bucket,

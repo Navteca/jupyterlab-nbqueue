@@ -3,19 +3,20 @@ import logging
 import sys
 from logging import Logger
 
+import boto3
 import requests
 import tornado
 import tornado.web
 from jupyter_server.base.handlers import APIHandler
 
-from .common.requests_utils import (
-    get_request_attr_value,
-)
-
 from .common.variables import (
     ARGO_WORKFLOWS_NAMESPACE,
     GET_WORKFLOWS_LIST,
     ARGO_TOKEN,
+    AWS_CREDENTIALS_PROFILE,
+)
+from .common.requests_utils import (
+    get_request_attr_value,
 )
 
 logger: Logger = logging.getLogger(__name__)
@@ -28,11 +29,11 @@ class WorkflowsHandler(APIHandler):
     def get(self):
         logger.error("Getting all workflows from endpoint")
         try:
-            # jobId = get_request_attr_value(self, "jobId")
-            # logger.error(f"jobId => {type(jobId)} {jobId}")
+            bucket = get_request_attr_value(self, "bucket")
+            logger.error(f"bucket => {type(bucket)} {bucket}")
 
-            # if not jobId:
-            #     raise Exception("The request to the extension backend is not valid")
+            if not bucket:
+                raise Exception("The request to the extension backend is not valid")
 
             headers = {
                 "Content-Type": "application/json",
@@ -46,19 +47,25 @@ class WorkflowsHandler(APIHandler):
                 verify=False,
             )
 
-            response_dict = response.json()
-            workflows_raw = response_dict["items"]
+            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            s3_client = session.client(
+                service_name="s3",
+            )
+
+            aws_response = s3_client.list_objects_v2(Bucket=bucket, Prefix="luisleon/apiBakerTest03/workflows/")
+
+            workflows: list[any]
+            if "Contents" in aws_response:
+                workflows_raw = aws_response["Contents"]
+            else:
+                print("Folder is empty.")
+
             workflows = (
                 list(
                     map(
                         lambda workflow: {
-                            "name": workflow["metadata"]["name"],
-                            "creationTimestamp": workflow["metadata"][
-                                "creationTimestamp"
-                            ],
-                            "status": workflow["status"]["phase"],
-                            "startedAt": workflow["status"]["startedAt"],
-                            "finishedAt": workflow["status"]["finishedAt"],
+                            "name": workflow["Key"],
+                            "status": 'Succeeded',
                         },
                         workflows_raw,
                     )
@@ -66,6 +73,27 @@ class WorkflowsHandler(APIHandler):
                 if workflows_raw
                 else []
             )
+
+            # response_dict = response.json()
+            # workflows_raw = response_dict["items"]
+            # workflows = (
+            #     list(
+            #         map(
+            #             lambda workflow: {
+            #                 "name": workflow["metadata"]["name"],
+            #                 "creationTimestamp": workflow["metadata"][
+            #                     "creationTimestamp"
+            #                 ],
+            #                 "status": workflow["status"]["phase"],
+            #                 "startedAt": workflow["status"]["startedAt"],
+            #                 "finishedAt": workflow["status"]["finishedAt"],
+            #             },
+            #             workflows_raw,
+            #         )
+            #     )
+            #     if workflows_raw
+            #     else []
+            # )
 
         except Exception as exc:
             logger.error(

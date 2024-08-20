@@ -28,14 +28,12 @@ def setup_handlers(web_app):
     app_name = "jupyterlab-nbqueue"
     base_url = web_app.settings["base_url"]
     route_pattern = url_path_join(base_url, app_name, "get-example")
-    nbqueue_handler = url_path_join(base_url, app_name, "nbqueue/submit")
     nbqueue_workflow = url_path_join(base_url, app_name, "workflow")
     nbqueue_workflows = url_path_join(base_url, app_name, "workflows")
     nbqueue_kernels = url_path_join(base_url, app_name, "kernels")
     nbqueue_conda = url_path_join(base_url, app_name, "conda")
     handlers = [
         (route_pattern, RouteHandler),
-        (nbqueue_handler, NBQueueHandler),
         (nbqueue_workflow, WorkflowHandler),
         (nbqueue_workflows, WorkflowsHandler),
         (nbqueue_kernels, KernelsHandler),
