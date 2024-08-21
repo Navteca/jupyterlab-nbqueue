@@ -116,7 +116,6 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="container-image"
                               name="container-image"
-                              defaultValue="466270585360.dkr.ecr.us-west-2.amazonaws.com/oss-jlab-apibaker-beta:20240730111854"
                               label="Container Image"
                               variant="standard"
                               margin="dense"
@@ -126,7 +125,6 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="conda-environment"
                               name="conda-environment"
-                              defaultValue="python3"
                               label="Conda environment"
                               variant="standard"
                               margin="dense"
