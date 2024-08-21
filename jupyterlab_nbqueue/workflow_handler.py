@@ -1,7 +1,6 @@
 import json
 import logging
 import importlib.resources as pkg_resources
-import requests
 import tornado
 import tornado.web
 import shlex
@@ -20,10 +19,6 @@ from .common.requests_utils import (
 )
 
 from .common.variables import (
-    ARGO_WORKFLOWS_NAMESPACE,
-    GET_WORKFLOW_LOG,
-    ARGO_TOKEN,
-    DELETE_WORKFLOW,
     SOURCE,
     AWS_CREDENTIALS_PROFILE,
 )

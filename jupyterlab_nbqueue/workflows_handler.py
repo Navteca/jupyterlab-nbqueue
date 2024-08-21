@@ -2,19 +2,14 @@ import json
 import logging
 import sys
 import os
-import re
 from logging import Logger
 
 import boto3
-import requests
 import tornado
 import tornado.web
 from jupyter_server.base.handlers import APIHandler
 
 from .common.variables import (
-    ARGO_WORKFLOWS_NAMESPACE,
-    GET_WORKFLOWS_LIST,
-    ARGO_TOKEN,
     AWS_CREDENTIALS_PROFILE,
 )
 from .common.requests_utils import (
