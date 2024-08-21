@@ -37,18 +37,6 @@ class WorkflowsHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": ARGO_TOKEN,
-            }
-
-            logger.error(GET_WORKFLOWS_LIST.format(ARGO_WORKFLOWS_NAMESPACE))
-            response = requests.get(
-                GET_WORKFLOWS_LIST.format(ARGO_WORKFLOWS_NAMESPACE),
-                headers=headers,
-                verify=False,
-            )
-
             user = os.environ["USER"]
             session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
             s3_client = session.client(
