@@ -1,0 +1,52 @@
+import logging
+import importlib.resources as pkg_resources
+import tornado
+import tornado.web
+import sys
+import boto3
+
+from logging import Logger
+from shutil import which
+
+from jupyter_server.base.handlers import APIHandler
+
+from .common.requests_utils import (
+    get_request_attr_value,
+)
+
+from .common.variables import (
+    AWS_CREDENTIALS_PROFILE,
+)
+
+logger: Logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+# Refresh API Key handler
+class WorkflowDownloadHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+        logger.error("Getting workflow logs")
+        try:
+            workflow_name = get_request_attr_value(self, "workflow_name")
+            logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            bucket = get_request_attr_value(self, "bucket")
+            logger.error(f"bucket => {type(bucket)} {bucket}")
+
+            if not workflow_name:
+                raise Exception("The request to the extension backend is not valid")
+            if not bucket:
+                raise Exception("The request to the extension backend is not valid")
+
+            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            s3_client = session.client(
+                service_name="s3",
+            )
+            response = s3_client.download_file(bucket, workflow_name, 'test.log')
+        except Exception as exc:
+            logger.error(
+                f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
+            )
+        else:
+            self.status_code = 204
+            self.finish(None)

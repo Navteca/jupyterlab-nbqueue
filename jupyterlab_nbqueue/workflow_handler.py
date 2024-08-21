@@ -174,14 +174,29 @@ class WorkflowHandler(APIHandler):
         try:
             workflow_name = get_request_attr_value(self, "workflow_name")
             logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            bucket = get_request_attr_value(self, "bucket")
+            logger.error(f"bucket => {type(bucket)} {bucket}")
 
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")
+            if not bucket:
+                raise Exception("The request to the extension backend is not valid")
+
+            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            s3_client = session.client(
+                service_name="s3",
+            )
+            response = s3_client.delete_object(Bucket=bucket, Key=workflow_name)
+            print(response)
+
+            message = None
+            if('DeleteMarker' in response):
+                message = "File could not be deleted"
 
         except Exception as exc:
             logger.error(
                 f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"
             )
         else:
-            self.set_status(201)
-            self.finish(None)
+            self.set_status(204)
+            self.finish(message if message else None)

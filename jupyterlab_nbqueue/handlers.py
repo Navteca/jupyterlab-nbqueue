@@ -5,6 +5,7 @@ from jupyter_server.utils import url_path_join
 
 from jupyterlab_nbqueue.nbqueue_handler import NBQueueHandler
 from jupyterlab_nbqueue.workflow_handler import WorkflowHandler
+from jupyterlab_nbqueue.workflow_download_handler import WorkflowDownloadHandler
 from jupyterlab_nbqueue.workflows_handler import WorkflowsHandler
 from jupyterlab_nbqueue.kernels_handler import KernelsHandler
 from jupyterlab_nbqueue.conda_handler import CondaHandler
@@ -29,12 +30,14 @@ def setup_handlers(web_app):
     base_url = web_app.settings["base_url"]
     route_pattern = url_path_join(base_url, app_name, "get-example")
     nbqueue_workflow = url_path_join(base_url, app_name, "workflow")
+    workflow_download_handler = url_path_join(base_url, app_name, "workflow/download")
     nbqueue_workflows = url_path_join(base_url, app_name, "workflows")
     nbqueue_kernels = url_path_join(base_url, app_name, "kernels")
     nbqueue_conda = url_path_join(base_url, app_name, "conda")
     handlers = [
         (route_pattern, RouteHandler),
         (nbqueue_workflow, WorkflowHandler),
+        (workflow_download_handler, WorkflowDownloadHandler),
         (nbqueue_workflows, WorkflowsHandler),
         (nbqueue_kernels, KernelsHandler),
         (nbqueue_conda, CondaHandler),

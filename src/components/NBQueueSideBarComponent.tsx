@@ -86,6 +86,14 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
           return logs
      };
 
+     const downloadWorkflowLog = async (workflowName: string, bucket: string) => {
+          const logs = await requestAPI<any>('workflow/download?workflow_name=' + workflowName + '&bucket=' + bucket, {
+               method: 'GET'
+          })
+          console.log(logs)
+          return logs
+     };
+
      const handleRefreshClick = (event: React.MouseEvent<HTMLButtonElement>) => {
           getWorkflows()
      };
@@ -116,40 +124,28 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
      const handleDownloadClick = (scrollType: DialogProps['scroll'], workflowName: string, bucket: string) => async () => {
           try {
                console.log('handleDownloadClick');
-               
-               // const logs = await getWorkflowLog(workflowName, bucket)
-
-               // console.log(`Endpoint Workflow log Result => ${logs}`)
-               // setContentLog(logs)
-               // setWorkflowName(workflowName)
+               const logs = await downloadWorkflowLog(workflowName, bucket)
+               console.log(`Endpoint Workflow log Result => ${logs}`)
 
           } catch (error) {
                console.log(`Error => ${JSON.stringify(error, null, 2)}`)
           }
 
           console.log(`Workflow Name => ${workflowName}`)
-          // setOpen(true);
-          // setScroll(scrollType);
-          // getWorkflowLog(workflowName, bucket)
      };
 
      const handleDeleteClick = (scrollType: DialogProps['scroll'], workflowName: string, bucket: string) => async () => {
           try {
                console.log('handleDeleteClick');
-               
+
                const logs = await deleteWorkflowLog(workflowName, bucket)
                console.log(`Endpoint Workflow log Result => ${logs}`)
-               // setContentLog(logs)
-               // setWorkflowName(workflowName)
-
           } catch (error) {
                console.log(`Error => ${JSON.stringify(error, null, 2)}`)
           }
 
           console.log(`Workflow Name => ${workflowName}`)
-          // setOpen(true);
-          // setScroll(scrollType);
-          // getWorkflowLog(workflowName, bucket)
+          getWorkflows()
      };
 
      const handleClose = () => {
