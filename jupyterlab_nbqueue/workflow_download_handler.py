@@ -4,6 +4,7 @@ import tornado
 import tornado.web
 import sys
 import boto3
+import os
 
 from logging import Logger
 from shutil import which
@@ -42,7 +43,9 @@ class WorkflowDownloadHandler(APIHandler):
             s3_client = session.client(
                 service_name="s3",
             )
-            response = s3_client.download_file(bucket, workflow_name, 'test.log')
+            response = s3_client.download_file(
+                bucket, workflow_name, os.path.basename(workflow_name)
+            )
         except Exception as exc:
             logger.error(
                 f"Generic exception from {sys._getframe(  ).f_code.co_name} with error: {exc}"

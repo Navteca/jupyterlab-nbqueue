@@ -1,6 +1,5 @@
 import { AppBar, Avatar, ButtonGroup, CssBaseline, Dialog, DialogContent, DialogContentText, DialogProps, DialogTitle, Grid, IconButton, List, ListItem, ListItemAvatar, ListItemSecondaryAction, ListItemText, Slide, Toolbar, Typography, } from '@mui/material'
 import Refresh from '@mui/icons-material/Refresh';
-import DeleteSweep from '@mui/icons-material/DeleteSweep';
 import Done from '@mui/icons-material/Done';
 import Error from '@mui/icons-material/Error';
 import Pending from '@mui/icons-material/Pending';
@@ -98,11 +97,6 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
           getWorkflows()
      };
 
-     // const handleLogClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-     //      console.log(event.currentTarget.id);
-     //      getWorkflowLog(event.currentTarget.id)
-     // };
-
      const handleLogClick = (scrollType: DialogProps['scroll'], workflowName: string, bucket: string) => async () => {
           try {
                const logs = await getWorkflowLog(workflowName, bucket)
@@ -118,7 +112,6 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
           console.log(`Workflow Name => ${workflowName}`)
           setOpen(true);
           setScroll(scrollType);
-          // getWorkflowLog(workflowName, bucket)
      };
 
      const handleDownloadClick = (scrollType: DialogProps['scroll'], workflowName: string, bucket: string) => async () => {
@@ -179,9 +172,6 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                          <ButtonGroup variant="outlined" aria-label="Basic button group" color="primary">
                               <IconButton aria-label="delete" onClick={handleRefreshClick}>
                                    <Refresh />
-                              </IconButton>
-                              <IconButton aria-label="delete">
-                                   <DeleteSweep />
                               </IconButton>
                          </ButtonGroup>
                     </Grid>
