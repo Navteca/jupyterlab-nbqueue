@@ -40,7 +40,7 @@ class WorkflowsHandler(APIHandler):
                 service_name="s3",
             )
 
-            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=user)
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=f'output/{user}')
             if "Contents" in response:
                 workflows_raw = response["Contents"]
             else:

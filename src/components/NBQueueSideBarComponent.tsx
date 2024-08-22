@@ -186,7 +186,7 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                                                   </Avatar>
                                              </ListItemAvatar>
                                              <ListItemText
-                                                  primary={workflow.name.split('/')[1]}
+                                                  primary={workflow.name.split('/')[2]}
                                                   secondary={
                                                        <React.Fragment>
                                                             <Typography

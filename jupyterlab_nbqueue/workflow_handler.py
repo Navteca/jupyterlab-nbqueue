@@ -19,6 +19,10 @@ from .common.requests_utils import (
     get_request_attr_value,
 )
 
+from .common.variables import (
+    SOURCE,
+)
+
 logger: Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -58,7 +62,7 @@ class WorkflowHandler(APIHandler):
             container = json_body["container"]
 
             full_url = self.request.full_url()
-            # full_url = 'http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows'
+            # full_url = "http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows"
             match = re.search("(\/user\/)(.*)(\/jupyterlab-nbqueue)", full_url)
             logger.error(match.group(2))
             user = match.group(2)
@@ -73,9 +77,9 @@ class WorkflowHandler(APIHandler):
             )
             if bucket:
                 logger.error("Generating conda environment file...")
-                f = open(f"{file_path}.yaml", "w")
-                conda_cmd_split = shlex.split(f"{which('conda')} env export")
-                with open(f"{file_path}.yaml", "w") as f_obj:
+                f = open(f"{file_path}.txt", "w")
+                conda_cmd_split = shlex.split(f"{which('conda')} list --explicit")
+                with open(f"{file_path}.txt", "w") as f_obj:
                     process = subprocess.Popen(
                         conda_cmd_split, stdout=f_obj, stderr=subprocess.PIPE
                     )
@@ -83,10 +87,10 @@ class WorkflowHandler(APIHandler):
                 logger.error("Uploading notebook to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
                     logger.error(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {user}/{file_name}/input/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} input/{user}/{file_name}/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} {user}/{file_name}/input/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} input/{user}/{file_name}/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
                     )
                     process = subprocess.Popen(
                         cmd_split, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -104,10 +108,10 @@ class WorkflowHandler(APIHandler):
                 logger.error("Uploading conda environment file to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
                     logger.error(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {user}/{file_name}/input/{file_name}.yaml {cpu} {ram} {conda} {container}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}.txt input/{user}/{file_name}/{file_name}.txt {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
-                        f"{which('python')} {p} {bucket} {client_type} {file_path}.yaml {user}/{file_name}/input/{file_name}.yaml {cpu} {ram} {conda} {container}"
+                        f"{which('python')} {p} {bucket} {client_type} {file_path}.txt input/{user}/{file_name}/{file_name}.txt {cpu} {ram} {conda} {container}"
                     )
                     process = subprocess.Popen(
                         cmd_split, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -186,7 +190,7 @@ class WorkflowHandler(APIHandler):
             print(response)
 
             message = None
-            if('DeleteMarker' in response):
+            if "DeleteMarker" in response:
                 message = "File could not be deleted"
 
         except Exception as exc:

@@ -77,8 +77,8 @@ if __name__ == "__main__":
     parser.add_argument("file_name", type=str)
     parser.add_argument("cpu", type=str)
     parser.add_argument("ram", type=str)
-    parser.add_argument("conda", type=str)
-    parser.add_argument("container", type=str)
+    parser.add_argument("--conda", type=str, default='')
+    parser.add_argument("--container", type=str, default='')
     args = parser.parse_args()
     process = None
     bucket = None
