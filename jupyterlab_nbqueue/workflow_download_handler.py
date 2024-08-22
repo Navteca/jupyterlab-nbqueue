@@ -15,10 +15,6 @@ from .common.requests_utils import (
     get_request_attr_value,
 )
 
-from .common.variables import (
-    AWS_CREDENTIALS_PROFILE,
-)
-
 logger: Logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -39,7 +35,7 @@ class WorkflowDownloadHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            session = boto3.Session()
             s3_client = session.client(
                 service_name="s3",
             )

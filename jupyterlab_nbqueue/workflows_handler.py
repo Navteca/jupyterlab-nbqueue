@@ -9,9 +9,6 @@ import tornado
 import tornado.web
 from jupyter_server.base.handlers import APIHandler
 
-from .common.variables import (
-    AWS_CREDENTIALS_PROFILE,
-)
 from .common.requests_utils import (
     get_request_attr_value,
 )
@@ -38,7 +35,7 @@ class WorkflowsHandler(APIHandler):
             logger.error(match.group(2))
             user = match.group(2)
 
-            session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
+            session = boto3.Session()
             s3_client = session.client(
                 service_name="s3",
             )
