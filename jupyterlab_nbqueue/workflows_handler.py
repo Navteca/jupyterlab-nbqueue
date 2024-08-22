@@ -1,7 +1,7 @@
 import json
 import logging
 import sys
-import os
+import re
 from logging import Logger
 
 import boto3
@@ -32,7 +32,12 @@ class WorkflowsHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            user = os.environ["USER"]
+            full_url = self.request.full_url()
+            # full_url = 'http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows'
+            match = re.search("(\/user\/)(.*)(\/jupyterlab-nbqueue)", full_url)
+            logger.error(match.group(2))
+            user = match.group(2)
+
             session = boto3.Session(profile_name=AWS_CREDENTIALS_PROFILE)
             s3_client = session.client(
                 service_name="s3",

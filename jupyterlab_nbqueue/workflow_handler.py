@@ -8,6 +8,7 @@ import subprocess
 import sys
 import os
 import boto3
+import re
 
 from logging import Logger
 from shutil import which
@@ -60,7 +61,12 @@ class WorkflowHandler(APIHandler):
             bucket = json_body["bucket"]
             conda = json_body["conda"]
             container = json_body["container"]
-            user = os.environ["USER"]
+
+            full_url = self.request.full_url()
+            # full_url = 'http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows'
+            match = re.search("(\/user\/)(.*)(\/jupyterlab-nbqueue)", full_url)
+            logger.error(match.group(2))
+            user = match.group(2)
 
             file_name, file_extension = os.path.splitext(file)
             file_path, file_extension = os.path.splitext(path)
