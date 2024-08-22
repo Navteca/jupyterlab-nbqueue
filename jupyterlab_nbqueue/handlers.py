@@ -3,7 +3,6 @@ import json
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
 
-from jupyterlab_nbqueue.nbqueue_handler import NBQueueHandler
 from jupyterlab_nbqueue.workflow_handler import WorkflowHandler
 from jupyterlab_nbqueue.workflow_download_handler import WorkflowDownloadHandler
 from jupyterlab_nbqueue.workflows_handler import WorkflowsHandler
