@@ -38,7 +38,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                     open={open}
                     onClose={handleClose}
                     fullWidth={fullWidth}
-                    maxWidth={maxWidth}                    
+                    maxWidth={maxWidth}
                     PaperProps={{
                          component: 'form',
                          onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
@@ -113,7 +113,6 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               fullWidth
                          />
                          <TextField
-                              required
                               id="container-image"
                               name="container-image"
                               label="Container Image"
@@ -122,7 +121,6 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               fullWidth
                          />
                          <TextField
-                              required
                               id="conda-environment"
                               name="conda-environment"
                               label="Conda environment"
