@@ -154,10 +154,7 @@ class WorkflowHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            session = boto3.Session()
-            s3_client = session.client(
-                service_name="s3",
-            )
+            s3_client = boto3.client('s3')
             response = s3_client.get_object(Bucket=bucket, Key=workflow_name)
             object_content = response["Body"].read().decode("utf-8")
         except Exception as exc:
@@ -182,10 +179,7 @@ class WorkflowHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            session = boto3.Session()
-            s3_client = session.client(
-                service_name="s3",
-            )
+            s3_client = boto3.client('s3')
             response = s3_client.delete_object(Bucket=bucket, Key=workflow_name)
             print(response)
 

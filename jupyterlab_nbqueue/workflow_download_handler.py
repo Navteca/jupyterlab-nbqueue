@@ -35,10 +35,7 @@ class WorkflowDownloadHandler(APIHandler):
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            session = boto3.Session()
-            s3_client = session.client(
-                service_name="s3",
-            )
+            s3_client = boto3.client('s3')
             response = s3_client.download_file(
                 bucket, workflow_name, os.path.basename(workflow_name)
             )

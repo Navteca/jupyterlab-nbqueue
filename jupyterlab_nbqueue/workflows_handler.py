@@ -35,11 +35,7 @@ class WorkflowsHandler(APIHandler):
             logger.error(match.group(2))
             user = match.group(2)
 
-            session = boto3.Session()
-            s3_client = session.client(
-                service_name="s3",
-            )
-
+            s3_client = boto3.client('s3')
             response = s3_client.list_objects_v2(Bucket=bucket, Prefix=f'output/{user}')
             if "Contents" in response:
                 workflows_raw = response["Contents"]

@@ -14,20 +14,20 @@ logger.setLevel(logging.DEBUG)
 
 @functools.lru_cache()
 def _get_signed_s3_client():
-    session = boto3.Session()
-    s3 = session.client(
-        service_name="s3",
-    )
-    return s3
+    client = boto3.client('s3')
+    # s3 = session.client(
+    #     service_name="s3",
+    # )
+    return client
 
 
 @functools.lru_cache()
 def _get_unsigned_s3_client():
-    session = boto3.Session()
-    s3 = session.client(
-        service_name="s3",
-    )
-    return s3
+    client = boto3.client('s3')
+    # s3 = session.client(
+    #     service_name="s3",
+    # )
+    return client
 
 
 class Error(Exception):
