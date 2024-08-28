@@ -72,7 +72,6 @@ class WorkflowHandler(APIHandler):
             client_type = "signed"
             if bucket:
                 logger.info("Generating conda environment file...")
-                f = open(f"{file_path}.txt", "w")
                 conda_cmd_split = shlex.split(f"{which('conda')} list --explicit")
                 with open(f"{file_path}.txt", "w") as f_obj:
                     process = subprocess.Popen(
