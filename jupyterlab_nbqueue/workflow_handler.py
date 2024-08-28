@@ -33,7 +33,7 @@ class WorkflowHandler(APIHandler):
     def post(self):
         try:
             json_body = self.get_json_body()
-            logger.error(json_body)
+            logger.info(json_body)
             if json_body is None:
                 raise Exception("Request body is missing.")
             if json_body["file"] is None:
@@ -64,19 +64,14 @@ class WorkflowHandler(APIHandler):
             full_url = self.request.full_url()
             # full_url = "http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows"
             match = re.search("(\/user\/)(.*)(\/jupyterlab-nbqueue)", full_url)
-            logger.error(match.group(2))
+            logger.info(match.group(2))
             user = match.group(2)
 
             file_name, file_extension = os.path.splitext(file)
             file_path, file_extension = os.path.splitext(path)
-
-            client_type = (
-                "unsigned"
-                if SOURCE.lower() in ["aws", "google", "microsoft"]
-                else "signed"
-            )
+            client_type = "signed"
             if bucket:
-                logger.error("Generating conda environment file...")
+                logger.info("Generating conda environment file...")
                 f = open(f"{file_path}.txt", "w")
                 conda_cmd_split = shlex.split(f"{which('conda')} list --explicit")
                 with open(f"{file_path}.txt", "w") as f_obj:
@@ -84,9 +79,9 @@ class WorkflowHandler(APIHandler):
                         conda_cmd_split, stdout=f_obj, stderr=subprocess.PIPE
                     )
 
-                logger.error("Uploading notebook to S3...")
+                logger.info("Uploading notebook to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
-                    logger.error(
+                    logger.info(
                         f"{which('python')} {p} {bucket} {client_type} {file_path}{file_extension} input/{user}/{file_name}/{file_name}{file_extension} {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
@@ -100,14 +95,14 @@ class WorkflowHandler(APIHandler):
                         out, error = process.communicate()
 
                         if out:
-                            logger.error(out)
+                            logger.info(out)
 
                         if error:
                             logger.error(error)
 
-                logger.error("Uploading conda environment file to S3...")
+                logger.info("Uploading conda environment file to S3...")
                 with pkg_resources.path("jupyterlab_nbqueue", "cmd_launcher.py") as p:
-                    logger.error(
+                    logger.info(
                         f"{which('python')} {p} {bucket} {client_type} {file_path}.txt input/{user}/{file_name}/{file_name}.txt {cpu} {ram} {conda} {container}"
                     )
                     cmd_split = shlex.split(
@@ -135,26 +130,26 @@ class WorkflowHandler(APIHandler):
                 out, error = process.communicate()
 
                 if out:
-                    logger.error(out)
+                    logger.info(out)
 
                 if error:
                     logger.error(error)
 
     @tornado.web.authenticated
     def get(self):
-        logger.error("Getting workflow logs")
+        logger.info("Getting workflow logs")
         try:
             workflow_name = get_request_attr_value(self, "workflow_name")
-            logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            logger.info(f"workflow_name => {type(workflow_name)} {workflow_name}")
             bucket = get_request_attr_value(self, "bucket")
-            logger.error(f"bucket => {type(bucket)} {bucket}")
+            logger.info(f"bucket => {type(bucket)} {bucket}")
 
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            s3_client = boto3.client('s3')
+            s3_client = boto3.client("s3")
             response = s3_client.get_object(Bucket=bucket, Key=workflow_name)
             object_content = response["Body"].read().decode("utf-8")
         except Exception as exc:
@@ -167,19 +162,19 @@ class WorkflowHandler(APIHandler):
 
     @tornado.web.authenticated
     def delete(self):
-        logger.error("Deleting a workflow by name")
+        logger.info("Deleting a workflow by name")
         try:
             workflow_name = get_request_attr_value(self, "workflow_name")
-            logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            logger.info(f"workflow_name => {type(workflow_name)} {workflow_name}")
             bucket = get_request_attr_value(self, "bucket")
-            logger.error(f"bucket => {type(bucket)} {bucket}")
+            logger.info(f"bucket => {type(bucket)} {bucket}")
 
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
 
-            s3_client = boto3.client('s3')
+            s3_client = boto3.client("s3")
             response = s3_client.delete_object(Bucket=bucket, Key=workflow_name)
             print(response)
 

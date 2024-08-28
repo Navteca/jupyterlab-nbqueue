@@ -19,7 +19,7 @@ logger.setLevel(logging.DEBUG)
 class CondaHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        logger.error("Getting conda env list")
+        logger.info("Getting conda env list")
         try:
             response = None
             conda_cmd_split = shlex.split(f"{which('conda')} env list --json")
@@ -29,7 +29,7 @@ class CondaHandler(APIHandler):
                 out, error = process.communicate()
 
                 if out:
-                    logger.error(json.loads(out))
+                    logger.info(json.loads(out))
                     response = json.dumps(json.loads(out))
 
                 if error:

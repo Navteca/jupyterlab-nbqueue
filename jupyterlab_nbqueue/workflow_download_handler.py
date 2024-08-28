@@ -23,12 +23,12 @@ logger.setLevel(logging.DEBUG)
 class WorkflowDownloadHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        logger.error("Getting workflow logs")
+        logger.info("Getting workflow logs")
         try:
             workflow_name = get_request_attr_value(self, "workflow_name")
-            logger.error(f"workflow_name => {type(workflow_name)} {workflow_name}")
+            logger.info(f"workflow_name => {type(workflow_name)} {workflow_name}")
             bucket = get_request_attr_value(self, "bucket")
-            logger.error(f"bucket => {type(bucket)} {bucket}")
+            logger.info(f"bucket => {type(bucket)} {bucket}")
 
             if not workflow_name:
                 raise Exception("The request to the extension backend is not valid")

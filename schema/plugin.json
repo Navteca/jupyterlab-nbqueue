@@ -8,7 +8,7 @@
       "type": "string",
       "title": "S3 Bucket ID",
       "description": "This is the S3 Bucket ID NBQueue will use for sending files to AWS S3.",
-      "default": ""
+      "default": "main-nbqueue"
     }
   },
   "additionalProperties": false

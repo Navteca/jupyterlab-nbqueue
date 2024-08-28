@@ -95,7 +95,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="cpu-number"
                               name="cpu-number"
-                              defaultValue="1000"
+                              defaultValue="1"
                               label="CPU"
                               variant="standard"
                               margin="dense"
@@ -106,7 +106,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="ram-number"
                               name="ram-number"
-                              defaultValue="256"
+                              defaultValue="4"
                               label="RAM"
                               variant="standard"
                               margin="dense"

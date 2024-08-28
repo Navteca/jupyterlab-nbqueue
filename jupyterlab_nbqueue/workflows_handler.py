@@ -21,10 +21,10 @@ logger.setLevel(logging.DEBUG)
 class WorkflowsHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        logger.error("Getting all workflows from endpoint")
+        logger.info("Getting all workflows from endpoint")
         try:
             bucket = get_request_attr_value(self, "bucket")
-            logger.error(f"bucket => {type(bucket)} {bucket}")
+            logger.info(f"bucket => {type(bucket)} {bucket}")
 
             if not bucket:
                 raise Exception("The request to the extension backend is not valid")
@@ -32,7 +32,7 @@ class WorkflowsHandler(APIHandler):
             full_url = self.request.full_url()
             # full_url = 'http://localhost:63118/user/jovyan/jupyterlab-nbqueue/workflows'
             match = re.search("(\/user\/)(.*)(\/jupyterlab-nbqueue)", full_url)
-            logger.error(match.group(2))
+            logger.info(match.group(2))
             user = match.group(2)
 
             s3_client = boto3.client('s3')

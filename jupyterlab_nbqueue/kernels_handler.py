@@ -20,7 +20,7 @@ logger.setLevel(logging.DEBUG)
 class KernelsHandler(APIHandler):
     @tornado.web.authenticated
     def get(self):
-        logger.error("Getting juyter kernelspec list")
+        logger.info("Getting juyter kernelspec list")
         try:
             response = None
             conda_cmd_split = shlex.split(f"{which('jupyter')} kernelspec list --json")
@@ -28,7 +28,7 @@ class KernelsHandler(APIHandler):
                     out, error = process.communicate()
 
                     if out:
-                        logger.error(json.loads(out))
+                        logger.info(json.loads(out))
                         response = json.dumps(json.loads(out))
 
                     if error:

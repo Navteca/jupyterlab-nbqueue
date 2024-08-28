@@ -12,24 +12,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-@functools.lru_cache()
-def _get_signed_s3_client():
-    client = boto3.client('s3')
-    # s3 = session.client(
-    #     service_name="s3",
-    # )
-    return client
-
-
-@functools.lru_cache()
-def _get_unsigned_s3_client():
-    client = boto3.client('s3')
-    # s3 = session.client(
-    #     service_name="s3",
-    # )
-    return client
-
-
 class Error(Exception):
     pass
 
@@ -77,8 +59,8 @@ if __name__ == "__main__":
     parser.add_argument("file_name", type=str)
     parser.add_argument("cpu", type=str)
     parser.add_argument("ram", type=str)
-    parser.add_argument("--conda", type=str, default='')
-    parser.add_argument("--container", type=str, default='')
+    parser.add_argument("--conda", type=str, default="")
+    parser.add_argument("--container", type=str, default="")
     args = parser.parse_args()
     process = None
     bucket = None
@@ -88,11 +70,6 @@ if __name__ == "__main__":
     message = ""
     dest = Path(".")
 
-    s3_client = (
-        _get_unsigned_s3_client()
-        if args.client_type.lower().strip() == "unsigned"
-        else _get_signed_s3_client()
-    )
     try:
         if which("aws") is None:
             raise ApplicationNotFound()
@@ -106,15 +83,16 @@ if __name__ == "__main__":
         conda = args.conda
         container = args.container
 
-        logger.error(f"LOCAL_FILE={filepath}")
+        logger.info(f"LOCAL_FILE={filepath}")
         tags = {"CPU": cpu, "RAM": ram, "CONDA": conda, "CONTAINER": container}
+        s3_client = boto3.client("s3")
         response = s3_client.upload_file(
             filepath,
             bucket,
             filename,
             ExtraArgs={"Tagging": parse.urlencode(tags)},
         )
-        print(response)
+        logger.info(response)
     except exceptions.ClientError as error:
         if error.response.get("Error", {}).get("Code", None) == "NoSuchKey":
             print(f"The specified Bucket: {key} has not been found")
