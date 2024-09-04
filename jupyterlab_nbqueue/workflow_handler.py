@@ -77,6 +77,8 @@ class WorkflowHandler(APIHandler):
                     process = subprocess.Popen(
                         conda_cmd_split, stdout=f_obj, stderr=subprocess.PIPE
                     )
+                    if process.wait() != 0:
+                        logger.info("There were some errors creating the conda file")
                     f_obj.close()
 
                 logger.info("Uploading notebook to S3...")
