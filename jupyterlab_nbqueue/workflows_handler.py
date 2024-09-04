@@ -35,8 +35,8 @@ class WorkflowsHandler(APIHandler):
             logger.info(match.group(2))
             user = match.group(2)
 
-            s3_client = boto3.client('s3')
-            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=f'output/{user}')
+            s3_client = boto3.client("s3")
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=f"output/{user}")
             if "Contents" in response:
                 workflows_raw = response["Contents"]
             else:
@@ -51,7 +51,7 @@ class WorkflowsHandler(APIHandler):
                         },
                         (
                             filter(
-                                lambda workflow: workflow["Key"].endswith("log"),
+                                lambda workflow: workflow["Key"][-1] != "/",
                                 workflows_raw,
                             )
                         ),
