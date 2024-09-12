@@ -51,7 +51,8 @@ class WorkflowsHandler(APIHandler):
                         },
                         (
                             filter(
-                                lambda workflow: workflow["Key"][-1] != "/",
+                                lambda workflow: workflow["Key"].endswith(".log")
+                                or workflow["Key"].endswith(".ipynb"),
                                 workflows_raw,
                             )
                         ),

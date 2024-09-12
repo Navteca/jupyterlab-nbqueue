@@ -1,4 +1,4 @@
-import { AppBar, Avatar, ButtonGroup, CssBaseline, Dialog, DialogContent, DialogContentText, DialogProps, DialogTitle, Grid, IconButton, List, ListItem, ListItemAvatar, ListItemSecondaryAction, ListItemText, Slide, Toolbar, Typography, } from '@mui/material'
+import { AppBar, Avatar, Container, CssBaseline, Dialog, DialogContent, DialogContentText, DialogProps, DialogTitle, Grid, IconButton, List, ListItem, ListItemAvatar, ListItemSecondaryAction, ListItemText, Slide, Toolbar, Typography } from '@mui/material'
 import Refresh from '@mui/icons-material/Refresh';
 import Done from '@mui/icons-material/Done';
 import Error from '@mui/icons-material/Error';
@@ -162,64 +162,73 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
 
      return (
           <React.Fragment>
-               <Grid container direction="row" justifyContent="space-between" alignItems="flex-start" rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
-                    <Grid item>
-                         <Typography variant="h5" gutterBottom>
+               <AppBar>
+                    <Toolbar>
+                         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                               NBQueue job list
                          </Typography>
-                    </Grid>
-                    <Grid item>
-                         <ButtonGroup variant="outlined" aria-label="Basic button group" color="primary">
-                              <IconButton aria-label="delete" onClick={handleRefreshClick}>
-                                   <Refresh />
-                              </IconButton>
-                         </ButtonGroup>
-                    </Grid>
-                    <Grid item xs={12}>
-                         <nav aria-label="execution job list">
-                              <List dense={dense}>
-                                   {workflows.map(workflow => {
-                                        return (<ListItem>
-                                             <ListItemAvatar>
-                                                  <Avatar color={workflow.status}>
-                                                       <AvatarStatusIcon status={workflow.status} />
-                                                  </Avatar>
-                                             </ListItemAvatar>
-                                             <ListItemText
-                                                  primary={workflow.name.split('/')[2]}
-                                                  secondary={
-                                                       <React.Fragment>
-                                                            <Typography
-                                                                 sx={{ display: 'inline' }}
-                                                                 component="span"
-                                                                 variant="body2"
-                                                                 color="text.primary"
-                                                            >
-                                                                 {workflow.name.split('/')[3]}
-                                                            </Typography>
-                                                            {"—" + workflow.status}
-                                                       </React.Fragment>
-                                                  }
-                                             />
-                                             <ListItemSecondaryAction>
-                                                  <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleLogClick('paper', workflow.name, bucket)}>
-                                                       <Visibility />
-                                                  </IconButton>
+                         <IconButton aria-label="delete" onClick={handleRefreshClick} color="inherit">
+                              <Refresh />
+                         </IconButton>
+                    </Toolbar>
+               </AppBar>
+               <Toolbar />
+               <Container sx={{
+                    height: '100%', // Limita la altura para permitir el scroll
+                    overflowY: 'auto', // Habilita el scroll vertical cuando el contenido excede la altura
+                    paddingBottom: 5
+               }}>
 
-                                                  <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleDownloadClick('paper', workflow.name, bucket)}>
-                                                       <FileDownloadOutlined />
-                                                  </IconButton>
-                                                  <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleDeleteClick('paper', workflow.name, bucket)}>
-                                                       <Delete />
-                                                  </IconButton>
-                                             </ListItemSecondaryAction>
-                                        </ListItem>)
-                                   }
-                                   )}
-                              </List>
-                         </nav>
+                    <Grid container direction="row" justifyContent="space-between" alignItems="flex-start" rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                         <Grid item xs={12}>
+                              <nav aria-label="execution job list">
+                                   <List dense={dense}>
+                                        {workflows.map(workflow => {
+                                             return (<ListItem>
+                                                  <ListItemAvatar>
+                                                       <Avatar color={workflow.status}>
+                                                            <AvatarStatusIcon status={workflow.status} />
+                                                       </Avatar>
+                                                  </ListItemAvatar>
+                                                  <ListItemText
+                                                       primary={workflow.name.split('/')[2]}
+                                                       secondary={
+                                                            <React.Fragment>
+                                                                 <Typography
+                                                                      sx={{ display: 'inline' }}
+                                                                      component="span"
+                                                                      variant="body2"
+                                                                      color="text.primary"
+                                                                 >
+                                                                      {workflow.name.split('/')[3]}
+                                                                 </Typography>
+                                                                 {"—" + workflow.status}
+                                                            </React.Fragment>
+                                                       }
+                                                  />
+                                                  <ListItemSecondaryAction>
+                                                       <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleLogClick('paper', workflow.name, bucket)}>
+                                                            <Visibility />
+                                                       </IconButton>
+
+                                                       <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleDownloadClick('paper', workflow.name, bucket)}>
+                                                            <FileDownloadOutlined />
+                                                       </IconButton>
+                                                       <IconButton edge="end" aria-label="view logs" id={workflow.name} itemID={workflow.name} onClick={handleDeleteClick('paper', workflow.name, bucket)}>
+                                                            <Delete />
+                                                       </IconButton>
+                                                  </ListItemSecondaryAction>
+                                             </ListItem>)
+                                        }
+                                        )}
+                                        <ListItem>
+                                             <ListItemText></ListItemText>
+                                        </ListItem>
+                                   </List>
+                              </nav>
+                         </Grid>
                     </Grid>
-               </Grid>
+               </Container>
                <Dialog
                     fullScreen
                     open={open}
