@@ -61,7 +61,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                                    }),
                                    {
                                         pending: {
-                                             message: 'Sending files to AWS',
+                                             message: 'Sending Notebook to NBQueue',
                                              options: { autoClose: 3000 }
                                         },
                                         /**
