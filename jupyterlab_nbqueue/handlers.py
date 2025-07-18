@@ -9,6 +9,7 @@ from jupyterlab_nbqueue.workflows_handler import WorkflowsHandler
 from jupyterlab_nbqueue.kernels_handler import KernelsHandler
 from jupyterlab_nbqueue.conda_handler import CondaHandler
 from jupyterlab_nbqueue.mpi_job_handler import MpiJobHandler
+from jupyterlab_nbqueue.accessible_directories_handler import AccessibleDirectoriesHandler
 
 import tornado
 
@@ -35,6 +36,7 @@ def setup_handlers(web_app):
     nbqueue_kernels = url_path_join(base_url, app_name, "kernels")
     nbqueue_conda = url_path_join(base_url, app_name, "conda")
     submit_mpi_job = url_path_join(base_url, app_name, "submit")
+    accessible_directories = url_path_join(base_url, app_name, "accessible-directories")
     handlers = [
         (route_pattern, RouteHandler),
         (nbqueue_workflow, WorkflowHandler),
@@ -43,5 +45,6 @@ def setup_handlers(web_app):
         (nbqueue_kernels, KernelsHandler),
         (nbqueue_conda, CondaHandler),
         (submit_mpi_job, MpiJobHandler),
+        (accessible_directories, AccessibleDirectoriesHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)

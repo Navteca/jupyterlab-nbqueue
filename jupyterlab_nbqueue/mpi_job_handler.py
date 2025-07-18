@@ -1,4 +1,3 @@
-
 """
 MPI Job Handler for JupyterLab NBQueue Extension.
 
@@ -245,8 +244,6 @@ class MpiJobHandler(APIHandler):
             await loop.run_in_executor(None, lambda: os.makedirs(job_dir, exist_ok=True))
             
             logger.info("Created job directory structure: {}", job_dir)
-            logger.debug("Directory hierarchy: user={}, project={}, job={}", 
-                        owner, file_name, job_folder_name)
             return job_dir
         except Exception as e:
             logger.error("Failed to create job directory structure {}: {}", job_dir, e)
@@ -371,11 +368,6 @@ class MpiJobHandler(APIHandler):
                 uid=uid,
                 gid=gid,
             )
-            logger.debug("Sending request to GRPC_SERVER with fields: "
-                       "notebook_file={}, owner={}, project={}, nbqueue_job_name={}, "
-                       "image={}, cpu={}, ram={}, job_dir={}", 
-                       notebook_file, owner, project, nbqueue_job_name, 
-                       image, cpu, ram, job_dir)
             response = stub.CreateJob(request)
             logger.debug("Received response from GRPC_SERVER: {}", response)
             return response
@@ -423,7 +415,7 @@ class MpiJobHandler(APIHandler):
 
             # Extract username from URL
             full_url = self.request.full_url()
-            full_url = "http://localhost:8888/user/jovyan/jupyterlab-mpi-job-launcher/submit"
+            # full_url = "http://localhost:8888/user/jovyan/jupyterlab-nbqueue/submit"
             logger.debug("Full URL: {}", full_url)
             match = re.search(r"/user/([^/]+)/", full_url)
             username = match.group(1) if match else "testuser"
