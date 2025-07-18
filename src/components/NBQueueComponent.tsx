@@ -15,7 +15,8 @@ import {
      DialogTitle,
      TextField
 } from '@mui/material';
-import React from 'react';
+import Autocomplete from '@mui/material/Autocomplete';
+import React, { useEffect, useState } from 'react';
 import { requestAPI } from '../handler';
 import { 
      JobSubmissionRequest, 
@@ -49,6 +50,28 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
      const [renderingFolder] = React.useState(props.renderingFolder);
      const [fullWidth] = React.useState(true);
      const [maxWidth] = React.useState<DialogProps['maxWidth']>('md');
+
+     // State for accessible directories
+     const [accessibleDirectories, setAccessibleDirectories] = useState<string[]>([]);
+
+     useEffect(() => {
+          // Fetch accessible directories from the handler
+          const fetchDirectories = async () => {
+               try {
+                    const response = await requestAPI<{ accessible_directories: { path: string }[] }>('accessible-directories', {
+                         method: 'POST',
+                         body: JSON.stringify({ root_path: renderingFolder }),
+                    });
+                    // Map response to extract paths as strings
+                    const directoryPaths = response.accessible_directories.map(dir => dir.path);
+                    setAccessibleDirectories(directoryPaths);
+               } catch (error) {
+                    console.error('Error fetching accessible directories:', error);
+               }
+          };
+
+          fetchDirectories();
+     }, [renderingFolder]);
 
      /** Closes the dialog */
      const handleClose = () => {
@@ -173,6 +196,21 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               variant="standard"
                               margin="dense"
                               fullWidth
+                         />
+
+                         {/* Accessible Directories */}
+                         <Autocomplete
+                              id="accessible-directories"
+                              options={accessibleDirectories}
+                              renderInput={(params) => (
+                                   <TextField
+                                        {...params}
+                                        label="Accessible Directories"
+                                        variant="standard"
+                                        margin="dense"
+                                        fullWidth
+                                   />
+                              )}
                          />
                     </DialogContent>
                     <DialogActions>
