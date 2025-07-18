@@ -8,6 +8,7 @@ from jupyterlab_nbqueue.workflow_download_handler import WorkflowDownloadHandler
 from jupyterlab_nbqueue.workflows_handler import WorkflowsHandler
 from jupyterlab_nbqueue.kernels_handler import KernelsHandler
 from jupyterlab_nbqueue.conda_handler import CondaHandler
+from jupyterlab_nbqueue.mpi_job_handler import MpiJobHandler
 
 import tornado
 
@@ -33,6 +34,7 @@ def setup_handlers(web_app):
     nbqueue_workflows = url_path_join(base_url, app_name, "workflows")
     nbqueue_kernels = url_path_join(base_url, app_name, "kernels")
     nbqueue_conda = url_path_join(base_url, app_name, "conda")
+    submit_mpi_job = url_path_join(base_url, app_name, "submit")
     handlers = [
         (route_pattern, RouteHandler),
         (nbqueue_workflow, WorkflowHandler),
@@ -40,5 +42,6 @@ def setup_handlers(web_app):
         (nbqueue_workflows, WorkflowsHandler),
         (nbqueue_kernels, KernelsHandler),
         (nbqueue_conda, CondaHandler),
+        (submit_mpi_job, MpiJobHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)

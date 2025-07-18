@@ -4,11 +4,11 @@
   "description": "NBQueue for JupyterLab Settings.",
   "type": "object",
   "properties": {
-    "s3BucketId": {
+    "renderingFolder": {
       "type": "string",
-      "title": "S3 Bucket ID",
-      "description": "This is the S3 Bucket ID NBQueue will use for sending files to AWS S3.",
-      "default": "main-nbqueue"
+      "title": "Rendering Folder",
+      "description": "This is the folder where rendered notebooks will be saved.",
+      "default": "/efs/rendered_notebooks"
     }
   },
   "additionalProperties": false

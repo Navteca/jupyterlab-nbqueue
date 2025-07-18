@@ -1,6 +1,12 @@
+/**
+ * NBQueue Job Submission Component
+ * 
+ * React component that provides a dialog interface for submitting notebooks
+ * to the execution queue with configurable parameters (CPU, RAM, container image, etc.).
+ */
+
 import {
      Button,
-     CssBaseline,
      Dialog,
      DialogActions,
      DialogContent,
@@ -11,23 +17,40 @@ import {
 } from '@mui/material';
 import React from 'react';
 import { requestAPI } from '../handler';
+import { 
+     JobSubmissionRequest, 
+     JobSubmissionResponse, 
+     NotebookFile,
+     validateJobSubmissionRequest,
+     isJobSubmissionSuccess
+} from '../common/types';
 import { Notification } from '@jupyterlab/apputils';
 
+/** Props interface for the NBQueueComponent */
 interface NBQueueComponentProps {
-     file: string;
-     bucket: string;
+     /** File object containing notebook information */
+     file: NotebookFile;
+     /** Output folder path for job results */
+     renderingFolder: string;
 }
 
+/**
+ * Main component for job submission dialog
+ * 
+ * Renders a Material-UI dialog with form fields for configuring
+ * notebook execution parameters and submitting to the queue.
+ */
 const NBQueueComponent: React.FC<NBQueueComponentProps> = (
      props
 ): JSX.Element => {
+     // Dialog state management
      const [open, setOpen] = React.useState(true);
-     // const [image, setImage] = React.useState('image01');
      const [file] = React.useState(props.file);
-     const [bucket] = React.useState(props.bucket);
+     const [renderingFolder] = React.useState(props.renderingFolder);
      const [fullWidth] = React.useState(true);
      const [maxWidth] = React.useState<DialogProps['maxWidth']>('md');
 
+     /** Closes the dialog */
      const handleClose = () => {
           setOpen(false);
      };
@@ -43,44 +66,59 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                          component: 'form',
                          onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
                               event.preventDefault();
+                              
+                              // Extract form data
                               const formData = new FormData(event.currentTarget);
                               const formJson = Object.fromEntries((formData as any).entries());
                               console.log(formJson);
 
+                              // Build payload for API request
+                              const payload: JobSubmissionRequest = {
+                                   notebook_file: file,
+                                   image: formJson['container-image'],
+                                   conda_env: formJson['conda-environment'],
+                                   output_path: renderingFolder,
+                                   cpu: formJson['cpu-number'],
+                                   ram: formJson['ram-number']
+                               };
+
+                              console.log(payload);
+
+                              // Validate payload before sending
+                              if (!validateJobSubmissionRequest(payload)) {
+                                   console.error('Invalid job submission payload:', payload);
+                                   return;
+                              }
+
+                              // Submit job with progress notifications
                               Notification.promise(
-                                   requestAPI<any>('workflow', {
+                                   requestAPI<JobSubmissionResponse>('submit', {
                                         method: 'POST',
-                                        body: JSON.stringify({
-                                             file,
-                                             cpu: formJson['cpu-number'],
-                                             ram: formJson['ram-number'],
-                                             bucket,
-                                             conda: formJson['conda-environment'],
-                                             container: formJson['container-image'],
-                                        })
+                                        body: JSON.stringify(payload),
                                    }),
                                    {
                                         pending: {
-                                             message: 'Sending Notebook to NBQueue',
-                                             options: { autoClose: 3000 }
+                                             message: 'Sending info to gRPC server',
                                         },
-                                        /**
-                                         * If not set `options.data` will be set to the promise result.
-                                         */
                                         success: {
-                                             message: (result, data) => 'Files sent successfully',
-                                             options: { autoClose: 3000 }
+                                             message: (result: unknown) => {
+                                                  const response = result as JobSubmissionResponse;
+                                                  if (isJobSubmissionSuccess(response)) {
+                                                       return response.success ? 
+                                                            (response.kubectl_output || 'Job submitted successfully') :
+                                                            (response.error_message || 'Job submission failed');
+                                                  }
+                                                  return 'Job submitted successfully';
+                                             },
+                                             options: { autoClose: 3000 },
                                         },
-                                        /**
-                                         * If not set `options.data` will be set to the promise rejection error.
-                                         */
                                         error: {
-                                             message: (reason, data) =>
-                                                  `Error sending files. Reason: ${reason}`,
-                                             options: { autoClose: 3000 }
-                                        }
+                                             message: (reason: any) =>
+                                                  `Error sending info. Reason: ${typeof reason === 'object' && reason.error ? reason.error : reason}`,
+                                             options: { autoClose: 3000 },
+                                        },
                                    }
-                              );
+                              );                              
 
                               handleClose();
                          }
@@ -91,6 +129,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                          <DialogContentText>
                               Please fill the form with your parameters.
                          </DialogContentText>
+                         
+                         {/* CPU Configuration */}
                          <TextField
                               required
                               id="cpu-number"
@@ -102,6 +142,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               fullWidth
                               autoFocus
                          />
+                         
+                         {/* RAM Configuration */}
                          <TextField
                               required
                               id="ram-number"
@@ -112,6 +154,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               margin="dense"
                               fullWidth
                          />
+                         
+                         {/* Container Image */}
                          <TextField
                               id="container-image"
                               name="container-image"
@@ -120,6 +164,8 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               margin="dense"
                               fullWidth
                          />
+                         
+                         {/* Conda Environment */}
                          <TextField
                               id="conda-environment"
                               name="conda-environment"
@@ -139,4 +185,3 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
 };
 
 export default NBQueueComponent;
-<CssBaseline />;
