@@ -80,18 +80,18 @@ class MpiJobRequestModel(BaseModel):
     resource requirements, environment specifications, and file paths.
     """
     notebook_file: NotebookFileModel
-    image: Annotated[str, constr(strip_whitespace=True, min_length=1)]
-    conda_env: Annotated[str, constr(strip_whitespace=True, min_length=1)]
+    image: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
+    conda_env: Optional[Annotated[str, constr(strip_whitespace=True, min_length=1)]] = None
     output_path: Annotated[str, constr(strip_whitespace=True, min_length=1)]
     cpu: Annotated[int, conint(gt=0)]
     ram: Annotated[str, constr(strip_whitespace=True, min_length=1, pattern=r"^\d+(\.\d+)?(Gi|G|Mi|M)?$")]
     owner: Optional[str] = None
     nbqueue_job_name: Optional[str] = None
 
-    @field_validator('image', 'conda_env', 'output_path', mode='before')
+    @field_validator('output_path', mode='before')
     @classmethod
     def validate_not_empty(cls, v):
-        """Ensure string fields are not empty after stripping whitespace."""
+        """Ensure output_path is not empty after stripping whitespace."""
         if v is None or (isinstance(v, str) and v.strip() == ""):
             raise ValueError("Field cannot be empty.")
         return v
@@ -234,9 +234,7 @@ class MpiJobHandler(APIHandler):
             ValueError: If directory creation fails
         """
         job_folder_name = f"{file_name}-{timestamp}"
-        user_dir = os.path.join(output_path, owner)
-        project_dir = os.path.join(user_dir, file_name)
-        job_dir = os.path.join(project_dir, job_folder_name)
+        job_dir = os.path.join(output_path, file_name, job_folder_name)
         
         try:
             # Use asyncio thread pool for I/O operations
@@ -288,8 +286,8 @@ class MpiJobHandler(APIHandler):
             logger.warning("Conda environment file was not generated, skipping copy")
 
     def _create_job_log_file(self, job_dir: str, nbqueue_job_name: str, 
-                           notebook_file: str, owner: str, image: str, 
-                           cpu: str, ram: str) -> None:
+                           notebook_file: str, owner: str, image: Optional[str], 
+                           conda_env: Optional[str], cpu: str, ram: str, output_path: str) -> None:
         """
         Create initial log file with job metadata.
         
@@ -298,9 +296,11 @@ class MpiJobHandler(APIHandler):
             nbqueue_job_name: Job identifier
             notebook_file: Notebook filename
             owner: Job owner
-            image: Container image
+            image: Container image (optional)
+            conda_env: Conda environment (optional)
             cpu: CPU allocation
             ram: RAM allocation
+            output_path: Output directory path
         """
         try:
             logs_file = os.path.join(job_dir, "logs.log")
@@ -309,7 +309,9 @@ class MpiJobHandler(APIHandler):
                 f.write(f"Job ID: {nbqueue_job_name}\n")
                 f.write(f"Notebook: {notebook_file}\n")
                 f.write(f"Owner: {owner}\n")
-                f.write(f"Image: {image}\n")
+                f.write(f"Output Path: {job_dir}\n")
+                f.write(f"Image: {image if image else 'N/A'}\n")
+                f.write(f"Conda Env: {conda_env if conda_env else 'N/A'}\n")
                 f.write(f"CPU: {cpu}, RAM: {ram}\n")
                 f.write("=" * 50 + "\n")
             logger.debug("Created logs file: {}", logs_file)
@@ -435,7 +437,7 @@ class MpiJobHandler(APIHandler):
             # Generate unique timestamp and job identifiers
             timestamp = datetime.now().strftime("%m%d%Y%H%M%S")
             job_folder_name = f"{file_name}-{timestamp}"
-            nbqueue_job_name = job_data.nbqueue_job_name or f"job-{username}-{timestamp}"
+            nbqueue_job_name = job_data.nbqueue_job_name or f"{username}-{file_name}-{timestamp}"
             
             # Get system user IDs asynchronously
             uid, gid = await self._get_system_ids()
@@ -453,7 +455,7 @@ class MpiJobHandler(APIHandler):
 
             # Create initial log file
             self._create_job_log_file(job_dir, nbqueue_job_name, notebook_file, 
-                                    owner, image, cpu, ram)
+                                    owner, image, conda_env, cpu, ram, output_path)
 
             # Clean up temporary files asynchronously
             await self._cleanup_temporary_files(conda_env_file)

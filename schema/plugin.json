@@ -8,7 +8,7 @@
       "type": "string",
       "title": "Rendering Folder",
       "description": "This is the folder where rendered notebooks will be saved.",
-      "default": "/efs/rendered_notebooks"
+      "default": "/efs"
     }
   },
   "additionalProperties": false
