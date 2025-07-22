@@ -13,7 +13,8 @@ import {
      DialogContentText,
      DialogProps,
      DialogTitle,
-     TextField
+     TextField,
+     Collapse
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import React, { useEffect, useState } from 'react';
@@ -50,9 +51,16 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
      const [renderingFolder] = React.useState(props.renderingFolder);
      const [fullWidth] = React.useState(true);
      const [maxWidth] = React.useState<DialogProps['maxWidth']>('md');
+     const [selectedOutputPath, setSelectedOutputPath] = useState<string | null>(null);
 
      // State for accessible directories
      const [accessibleDirectories, setAccessibleDirectories] = useState<string[]>([]);
+     const [showAdvanced, setShowAdvanced] = useState(false);
+
+     // New state variables for container image and conda environment
+     const [containerImage, setContainerImage] = useState('');
+     const [condaEnv, setCondaEnv] = useState('');
+     const [condaEnvError, setCondaEnvError] = useState(false);
 
      useEffect(() => {
           // Fetch accessible directories from the handler
@@ -89,23 +97,24 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                          component: 'form',
                          onSubmit: async (event: React.FormEvent<HTMLFormElement>) => {
                               event.preventDefault();
-                              
-                              // Extract form data
                               const formData = new FormData(event.currentTarget);
                               const formJson = Object.fromEntries((formData as any).entries());
-                              console.log(formJson);
+
+                              // Validación: si container-image tiene valor, conda-environment es obligatorio
+                              if (containerImage && !condaEnv) {
+                                   setCondaEnvError(true);
+                                   return;
+                              }
 
                               // Build payload for API request
                               const payload: JobSubmissionRequest = {
                                    notebook_file: file,
-                                   image: formJson['container-image'],
-                                   conda_env: formJson['conda-environment'],
-                                   output_path: renderingFolder,
+                                   image: containerImage || formJson['container-image'],
+                                   conda_env: condaEnv || formJson['conda-environment'],
+                                   output_path: selectedOutputPath ?? '',
                                    cpu: formJson['cpu-number'],
                                    ram: formJson['ram-number']
                                };
-
-                              console.log(payload);
 
                               // Validate payload before sending
                               if (!validateJobSubmissionRequest(payload)) {
@@ -160,10 +169,12 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               name="cpu-number"
                               defaultValue="1"
                               label="CPU"
+                              type="number"
                               variant="standard"
                               margin="dense"
                               fullWidth
                               autoFocus
+                              inputProps={{ min: 1, max: 32, step: 1 }}
                          />
                          
                          {/* RAM Configuration */}
@@ -171,47 +182,80 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                               required
                               id="ram-number"
                               name="ram-number"
-                              defaultValue="4"
+                              defaultValue="1"
                               label="RAM"
+                              type="number"
                               variant="standard"
                               margin="dense"
                               fullWidth
+                              inputProps={{ min: 1, max: 32, step: 1 }}
                          />
                          
-                         {/* Container Image */}
-                         <TextField
-                              id="container-image"
-                              name="container-image"
-                              label="Container Image"
-                              variant="standard"
-                              margin="dense"
-                              fullWidth
-                         />
-                         
-                         {/* Conda Environment */}
-                         <TextField
-                              id="conda-environment"
-                              name="conda-environment"
-                              label="Conda environment"
-                              variant="standard"
-                              margin="dense"
-                              fullWidth
-                         />
-
                          {/* Accessible Directories */}
                          <Autocomplete
-                              id="accessible-directories"
+                              id="output-path"
                               options={accessibleDirectories}
+                              value={selectedOutputPath}
+                              onChange={(_, newValue) => setSelectedOutputPath(newValue)}
                               renderInput={(params) => (
                                    <TextField
                                         {...params}
-                                        label="Accessible Directories"
+                                        label="Output Path"
                                         variant="standard"
                                         margin="dense"
                                         fullWidth
+                                        required
                                    />
                               )}
                          />
+
+                         {/* Advanced Options Toggle */}
+                         <Button
+                              onClick={() => setShowAdvanced((prev) => !prev)}
+                              color="primary"
+                              style={{ marginTop: 16, marginBottom: 8 }}
+                         >
+                              {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+                         </Button>
+                         
+                         {/* Advanced Options Fields */}
+                         <Collapse in={showAdvanced}>
+                              <div>
+                                   {/* Container Image */}
+                                   <TextField
+                                        id="container-image"
+                                        name="container-image"
+                                        label="Container Image"
+                                        variant="standard"
+                                        margin="dense"
+                                        fullWidth
+                                        style={{ marginTop: 8 }}
+                                        value={containerImage}
+                                        onChange={e => {
+                                             setContainerImage(e.target.value);
+                                             setCondaEnvError(false);
+                                        }}
+                                   />
+                                   
+                                   {/* Conda Environment */}
+                                   <TextField
+                                        id="conda-environment"
+                                        name="conda-environment"
+                                        label="Conda environment"
+                                        variant="standard"
+                                        margin="dense"
+                                        fullWidth
+                                        style={{ marginTop: 8 }}
+                                        value={condaEnv}
+                                        onChange={e => {
+                                             setCondaEnv(e.target.value);
+                                             setCondaEnvError(false);
+                                        }}
+                                        error={condaEnvError}
+                                        helperText={condaEnvError ? 'Conda environment is required if container image is set.' : ''}
+                                   />
+                              </div>
+                         </Collapse>
                     </DialogContent>
                     <DialogActions>
                          <Button onClick={handleClose}>Cancel</Button>

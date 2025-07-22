@@ -126,7 +126,7 @@ export function validateNotebookFile(file: any): file is NotebookFile {
 export function validateJobSubmissionRequest(request: any): request is JobSubmissionRequest {
   if (!request) return false;
   
-  const requiredFields = ['notebook_file', 'image', 'conda_env', 'output_path', 'cpu', 'ram'];
+  const requiredFields = ['notebook_file', 'output_path', 'cpu', 'ram'];
   for (const field of requiredFields) {
     if (!request[field]) return false;
   }
