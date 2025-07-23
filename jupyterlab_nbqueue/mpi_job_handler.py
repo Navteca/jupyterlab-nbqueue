@@ -36,13 +36,13 @@ try:
     from .config import settings
     
     # Load configuration settings
-    GRPC_SERVER = settings.GRPC_SERVER
+    NBQUEUE_SERVER = settings.NBQUEUE_SERVER
     LOG_LEVEL = settings.LOG_LEVEL
     OSS_LOG_FILE_PATH = settings.OSS_LOG_FILE_PATH
     IS_DEV = LOG_LEVEL == "DEBUG"
 except ImportError as e:
     # Fallback values if imports fail during initialization
-    GRPC_SERVER = "localhost:50051"
+    NBQUEUE_SERVER = "localhost:50051"
     LOG_LEVEL = "DEBUG"
     OSS_LOG_FILE_PATH = "logs/mpi_job_launcher.log"
     IS_DEV = True
@@ -355,7 +355,7 @@ class MpiJobHandler(APIHandler):
         Returns:
             gRPC response object
         """
-        with grpc.insecure_channel(GRPC_SERVER) as channel:
+        with grpc.insecure_channel(NBQUEUE_SERVER) as channel:
             stub = service_pb2_grpc.NBQueueServiceStub(channel)
             request = service_pb2.CreateJobRequest(
                 notebook_file=notebook_file,
@@ -370,8 +370,13 @@ class MpiJobHandler(APIHandler):
                 uid=uid,
                 gid=gid,
             )
+            logger.info(
+                f"Sending gRPC job request: "
+                f"notebook_file={notebook_file}, owner={owner}, project={project}, nbqueue_job_name={nbqueue_job_name}, "
+                f"image={image}, conda_env={conda_env}, output_path={job_dir}, cpu={cpu}, ram={ram}, uid={uid}, gid={gid}"
+            )
             response = stub.CreateJob(request)
-            logger.debug("Received response from GRPC_SERVER: {}", response)
+            logger.debug("Received response from NBQUEUE_SERVER: {}", response)
             return response
 
     @tornado.web.authenticated
