@@ -3,7 +3,7 @@ from typing import Literal
 
 class Settings(BaseSettings):
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "DEBUG"
-    GRPC_SERVER: str = "localhost:50051"
+    NBQUEUE_SERVER: str = "localhost:50051"
     OSS_LOG_FILE_PATH: str = "logs/mpi_job_launcher.log"
 
     class Config:
