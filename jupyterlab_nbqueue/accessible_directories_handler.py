@@ -32,19 +32,19 @@ try:
     
     # Load configuration settings
     LOG_LEVEL = settings.LOG_LEVEL
-    OSS_LOG_FILE_PATH = settings.OSS_LOG_FILE_PATH
+    NBQUEUE_LOG_FILE_PATH = settings.NBQUEUE_LOG_FILE_PATH
     IS_DEV = LOG_LEVEL == "DEBUG"
 except ImportError as e:
     # Fallback values if imports fail during initialization
     LOG_LEVEL = "DEBUG"
-    OSS_LOG_FILE_PATH = "logs/accessible_directories.log"
+    NBQUEUE_LOG_FILE_PATH = "logs/accessible_directories.log"
     IS_DEV = True
     print(f"Warning: Could not import config modules: {e}")
 
 # Configure logger for this handler
 logger.remove()
 logger.add(
-    OSS_LOG_FILE_PATH,
+    NBQUEUE_LOG_FILE_PATH,
     rotation="00:00",
     retention="7 days",
     compression="zip",

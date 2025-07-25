@@ -38,13 +38,13 @@ try:
     # Load configuration settings
     NBQUEUE_SERVER = settings.NBQUEUE_SERVER
     LOG_LEVEL = settings.LOG_LEVEL
-    OSS_LOG_FILE_PATH = settings.OSS_LOG_FILE_PATH
+    NBQUEUE_LOG_FILE_PATH = settings.NBQUEUE_LOG_FILE_PATH
     IS_DEV = LOG_LEVEL == "DEBUG"
 except ImportError as e:
     # Fallback values if imports fail during initialization
     NBQUEUE_SERVER = "localhost:50051"
     LOG_LEVEL = "DEBUG"
-    OSS_LOG_FILE_PATH = "logs/mpi_job_launcher.log"
+    NBQUEUE_LOG_FILE_PATH = "logs/mpi_job_launcher.log"
     IS_DEV = True
     print(f"Warning: Could not import proto/config modules: {e}")
     # These will be imported later when actually needed
@@ -54,7 +54,7 @@ except ImportError as e:
 # Configure logger
 logger.remove()
 logger.add(
-    OSS_LOG_FILE_PATH,
+    NBQUEUE_LOG_FILE_PATH,
     rotation="00:00",
     retention="7 days",
     compression="zip",
