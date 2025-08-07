@@ -30,7 +30,8 @@ dependencies = [
     "python-dotenv",
     "pydantic-settings",
     "grpcio",
-    "grpcio-tools"
+    "grpcio-tools",
+    "sqlalchemy"
 ]
 dynamic = ["version", "description", "authors", "urls", "keywords"]
 

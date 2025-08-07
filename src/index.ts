@@ -15,13 +15,13 @@ import { runIcon } from '@jupyterlab/ui-components';
 import { NBQueueWidget } from "./widgets/NBQueueWidget";
 import { Widget } from '@lumino/widgets';
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
-import { ICommandPalette, Notification, ToolbarButton } from '@jupyterlab/apputils';
+import { ICommandPalette, MainAreaWidget, Notification, ToolbarButton } from '@jupyterlab/apputils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import {
   NotebookPanel,
   INotebookModel,
 } from '@jupyterlab/notebook';
-// import { NBQueueSideBarWidget } from './widgets/NBQueueSideBarWidget';
+import { NBQueueSideBarWidget } from './widgets/NBQueueSideBarWidget';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { loadSetting } from './utils';
 import _ from 'lodash'
@@ -65,15 +65,15 @@ const activate = async (app: JupyterFrontEnd, factory: IFileBrowserFactory, pale
   }
 
   // Create and configure the sidebar widget for job management
-  // const sideBarContent = new NBQueueSideBarWidget(renderingFolder);
-  // const sideBarWidget = new MainAreaWidget<NBQueueSideBarWidget>({
-  //   content: sideBarContent
-  // });
-  // // Configure sidebar widget appearance and add to shell
-  // sideBarWidget.toolbar.hide();
-  // sideBarWidget.title.icon = runIcon;
-  // sideBarWidget.title.caption = 'NBQueue job list';
-  // app.shell.add(sideBarWidget, 'right', { rank: 501 });
+  const sideBarContent = new NBQueueSideBarWidget(renderingFolder);
+  const sideBarWidget = new MainAreaWidget<NBQueueSideBarWidget>({
+    content: sideBarContent
+  });
+  // Configure sidebar widget appearance and add to shell
+  sideBarWidget.toolbar.hide();
+  sideBarWidget.title.icon = runIcon;
+  sideBarWidget.title.caption = 'NBQueue job list';
+  app.shell.add(sideBarWidget, 'right', { rank: 501 });
 
   // Register command for sending notebooks to queue via context menu
   app.commands.addCommand('jupyterlab-nbqueue:open', {

@@ -124,7 +124,7 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
 
                               // Submit job with progress notifications
                               Notification.promise(
-                                   requestAPI<JobSubmissionResponse>('submit', {
+                                   requestAPI<JobSubmissionResponse>('job', {
                                         method: 'POST',
                                         body: JSON.stringify(payload),
                                    }),
