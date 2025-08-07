@@ -13,11 +13,12 @@ Main components:
 """
 
 import json
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from .models import Job, Base
 import os
 import re
-import shlex
 import shutil
-import subprocess
 import asyncio
 from datetime import datetime
 from shutil import which
@@ -72,7 +73,7 @@ class NotebookFileModel(BaseModel):
     path: Annotated[str, constr(strip_whitespace=True, min_length=1)]
 
 
-class MpiJobRequestModel(BaseModel):
+class JobRequestModel(BaseModel):
     """
     Model for validating job submission requests.
     
@@ -123,7 +124,108 @@ class MpiJobRequestModel(BaseModel):
     class Config:
         extra = 'allow'
 
-class MpiJobHandler(APIHandler):
+class JobHandler(APIHandler):
+    @tornado.web.authenticated
+    async def delete(self):
+        """
+        Delete a job from the job history by job_id.
+        Expects job_id as a query parameter or in the JSON body.
+        """
+        job_id = self.get_argument("job_id", None)
+        if not job_id:
+            # Try to get from JSON body if not in query params
+            try:
+                json_body = self.get_json_body()
+                job_id = json_body.get("job_id") if json_body else None
+            except Exception:
+                job_id = None
+        if not job_id:
+            self.set_status(400)
+            self.finish(json.dumps({"error": "Missing job_id parameter"}))
+            return
+        session = self.SessionLocal()
+        try:
+            job = session.query(Job).filter_by(job_id=job_id).first()
+            if not job:
+                self.set_status(404)
+                self.finish(json.dumps({"error": f"Job with id {job_id} not found"}))
+                return
+            session.delete(job)
+            session.commit()
+            self.write({"success": True, "message": f"Job {job_id} deleted"})
+        except Exception as exc:
+            session.rollback()
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(exc)}))
+        finally:
+            session.close()
+    # SQLite database initialization
+    db_path = os.path.join(os.path.dirname(__file__), "nbqueue_jobs.db")
+    engine = create_engine(f"sqlite:///{db_path}", echo=False, future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+
+    @tornado.web.authenticated
+    async def get(self):
+        # Get job_id and namespace from GET parameters
+        job_id = self.get_argument("job_id", None)
+        namespace = self.get_argument("namespace", "default")
+        if not job_id:
+            self.set_status(400)
+            self.finish(json.dumps({"error": "Missing job_id parameter"}))
+            return
+        # Query status from gRPC server
+        try:
+            with grpc.insecure_channel(os.environ.get("NBQUEUE_SERVER", "localhost:50051")) as channel:
+                stub = service_pb2_grpc.NBQueueServiceStub(channel)
+                request = service_pb2.JobStatusRequest(job_id=job_id, namespace=namespace)
+                response = stub.GetJobStatus(request)
+        except Exception as exc:
+            self.set_status(500)
+            self.finish(json.dumps({"error": str(exc)}))
+            return
+        # Save request and response in the database
+        session = self.SessionLocal()
+        try:
+            job_record = Job(
+                job_id=job_id,
+                request_json=json.dumps({"job_id": job_id, "namespace": namespace}),
+                response_json=json.dumps({
+                    "success": getattr(response, "success", None),
+                    "status": getattr(response, "status", None),
+                    "job_json": getattr(response, "job_json", None),
+                    "active_pods": getattr(response, "active_pods", None),
+                    "succeeded_pods": getattr(response, "succeeded_pods", None),
+                    "failed_pods": getattr(response, "failed_pods", None),
+                    "start_time": getattr(response, "start_time", None),
+                    "completion_time": getattr(response, "completion_time", None),
+                    "error_message": getattr(response, "error_message", None)
+                }),
+                status=getattr(response, "status", None),
+                error_message=getattr(response, "error_message", None)
+            )
+            session.add(job_record)
+            session.commit()
+        except Exception as db_exc:
+            session.rollback()
+        finally:
+            session.close()
+        # Build response
+        response_data = {
+            "success": getattr(response, "success", None),
+            "status": getattr(response, "status", None),
+            "job_json": getattr(response, "job_json", None),
+            "active_pods": getattr(response, "active_pods", None),
+            "succeeded_pods": getattr(response, "succeeded_pods", None),
+            "failed_pods": getattr(response, "failed_pods", None),
+            "start_time": getattr(response, "start_time", None),
+            "completion_time": getattr(response, "completion_time", None)
+        }
+        if getattr(response, "error_message", None):
+            response_data["error_message"] = getattr(response, "error_message", None)
+        self.write(response_data)
+
+
     """
     Handler for MPI job submission requests.
     
@@ -407,7 +509,7 @@ class MpiJobHandler(APIHandler):
 
             # Validate and parse request using Pydantic
             try:
-                job_data = MpiJobRequestModel(**json_body)
+                job_data = JobRequestModel(**json_body)
             except ValidationError as ve:
                 logger.error("Validation error: {}", ve)
                 self.set_status(422)
@@ -472,17 +574,51 @@ class MpiJobHandler(APIHandler):
                                                 notebook_file, owner, project, nbqueue_job_name,
                                                 image, conda_env, job_dir, cpu, ram, uid, gid)
 
+            # Save request and response in the database
+            session = self.SessionLocal()
+            try:
+                job_record = Job(
+                    job_id=getattr(response, "job_id", None),
+                    notebook_file=notebook_file,
+                    owner=owner,
+                    project=project,
+                    nbqueue_job_name=nbqueue_job_name,
+                    image=image,
+                    conda_env=conda_env,
+                    output_path=output_path,
+                    cpu=cpu,
+                    ram=ram,
+                    uid=uid,
+                    gid=gid,
+                    request_json=json.dumps(json_body),
+                    response_json=json.dumps({
+                        "success": getattr(response, "success", None),
+                        "job_id": getattr(response, "job_id", None),
+                        "kubectl_output": getattr(response, "kubectl_output", None),
+                        "error_message": getattr(response, "error_message", None)
+                    }),
+                    status="success" if getattr(response, "success", False) else "error",
+                    error_message=getattr(response, "error_message", None)
+                )
+                session.add(job_record)
+                session.commit()
+            except Exception as db_exc:
+                logger.error("Error saving job to database: {}", db_exc)
+                session.rollback()
+            finally:
+                session.close()
+
             # Build response with job metadata
             response_data = {
-                "success": response.success,
-                "job_id": response.job_id,
-                "kubectl_output": response.kubectl_output,
+                "success": getattr(response, "success", None),
+                "job_id": getattr(response, "job_id", None),
+                "kubectl_output": getattr(response, "kubectl_output", None),
                 "job_directory": job_dir,
                 "job_folder_name": job_folder_name
             }
-            if response.error_message:
-                response_data["error_message"] = response.error_message
-            
+            if getattr(response, "error_message", None):
+                response_data["error_message"] = getattr(response, "error_message", None)
+
             self.write(response_data)
             
         except grpc.RpcError as e:
@@ -494,6 +630,6 @@ class MpiJobHandler(APIHandler):
             self.set_status(400)
             self.finish(json.dumps({"error": str(e)}))
         except Exception as e:
-            logger.exception("Unhandled exception in MpiJobHandler: {}", e)
+            logger.exception("Unhandled exception in JobHandler: {}", e)
             self.set_status(500)
             self.finish(json.dumps({"error": "Internal server error."}))

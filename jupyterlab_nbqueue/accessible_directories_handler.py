@@ -164,75 +164,52 @@ class AccessibleDirectoriesHandler(APIHandler):
 
     async def _get_accessible_subdirectories(self, root_path: str) -> List[Dict[str, Any]]:
         """
-        Get list of accessible subdirectories within the root path.
-        
-        Args:
-            root_path: Root directory path to scan
-            
-        Returns:
-            List of accessible directory information dictionaries
+        Get list of accessible subdirectories within the root path using 'find' for accurate filtering.
+        Only first-level subdirectories that are readable and executable are returned.
         """
+        logger.info("Getting accessible subdirectories for root path: {}", root_path)
+        import subprocess
         accessible_dirs = []
-        
         try:
-            # First check if root directory is accessible
             if not os.path.exists(root_path):
                 logger.error("Root directory does not exist: {}", root_path)
                 return []
-            
             if not os.path.isdir(root_path):
                 logger.error("Root path is not a directory: {}", root_path)
                 return []
-            
-            # Get all subdirectories asynchronously
-            loop = asyncio.get_event_loop()
-            
-            try:
-                all_items = await loop.run_in_executor(None, lambda: os.listdir(root_path))
-            except PermissionError:
-                logger.error("No permission to read root directory: {}", root_path)
+            # Run the find command to get first-level readable and executable directories
+            find_cmd = [
+                "find", root_path,
+                "-maxdepth", "1",
+                "-mindepth", "1",
+                "-type", "d",
+                "-readable",
+                "-exec", "test", "-x", "{}", ";",
+                "-print"
+            ]
+            proc = await asyncio.create_subprocess_exec(
+                *find_cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode != 0:
+                logger.error("find command failed: {}", stderr.decode())
                 return []
-            except Exception as e:
-                logger.error("Failed to list root directory {}: {}", root_path, e)
-                return []
-            
-            # Filter only directories and check access for each
-            subdirectories = []
-            for item in all_items:
-                item_path = os.path.join(root_path, item)
-                try:
-                    if await loop.run_in_executor(None, lambda: os.path.isdir(item_path)):
-                        subdirectories.append(item_path)
-                except Exception as e:
-                    logger.warning("Error checking if {} is directory: {}", item_path, e)
-                    continue
-            
-            # Check access for each subdirectory concurrently
-            if subdirectories:
-                access_tasks = [
-                    self._check_directory_access(subdir) 
-                    for subdir in subdirectories
-                ]
-                
-                directory_results = await asyncio.gather(*access_tasks, return_exceptions=True)
-                
-                # Filter successful results and accessible directories
-                for result in directory_results:
-                    if isinstance(result, dict):
-                        accessible_dirs.append(result)
-                        if result["is_accessible"]:
-                            logger.debug("Accessible: {}", result["path"])
-                    else:
-                        logger.warning("Error in directory access check: {}", result)
-            
-            # Sort accessible directories by name
+            dir_paths = [line.strip() for line in stdout.decode().splitlines() if line.strip()]
+            # Check access for each directory
+            access_tasks = [self._check_directory_access(d) for d in dir_paths]
+            directory_results = await asyncio.gather(*access_tasks, return_exceptions=True)
+            for result in directory_results:
+                if isinstance(result, dict):
+                    accessible_dirs.append(result)
+                    if result["is_accessible"]:
+                        logger.debug("Accessible: {}", result["path"])
+                else:
+                    logger.warning("Error in directory access check: {}", result)
             accessible_dirs.sort(key=lambda x: x["name"].lower())
-            
-            accessible_count = sum(1 for d in accessible_dirs if d["is_accessible"])
-            
         except Exception as e:
             logger.exception("Unexpected error getting accessible subdirectories: {}", e)
-        
         return accessible_dirs
 
     @tornado.web.authenticated
