@@ -160,8 +160,7 @@ class JobHandler(APIHandler):
         finally:
             session.close()
     # SQLite database initialization
-    db_path = os.path.join(os.path.dirname(__file__), "nbqueue_jobs.db")
-    engine = create_engine(f"sqlite:///{db_path}", echo=False, future=True)
+    engine = create_engine(f"sqlite:///.nbqueue_jobs.db", echo=False, future=True)
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
