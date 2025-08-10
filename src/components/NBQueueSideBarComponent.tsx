@@ -52,6 +52,16 @@ interface NBQueueSideBarComponentProps {
  * NBQueue workflows including status indicators and job controls.
  */
 const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props): JSX.Element => {
+    // Escucha el evento global para forzar actualización del historial
+    React.useEffect(() => {
+        const handler = () => {
+            getJobHistory(true);
+        };
+        window.addEventListener('nbqueue-job-submitted', handler);
+        return () => {
+            window.removeEventListener('nbqueue-job-submitted', handler);
+        };
+    }, []);
     // Component state management
     const [dense] = React.useState(true)
     const [jobs, setJobs] = React.useState<JobHistory[]>([])
