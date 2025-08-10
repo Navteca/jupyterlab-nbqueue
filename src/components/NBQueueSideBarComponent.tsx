@@ -320,16 +320,20 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         NBQueue job history
                     </Typography>
-                    <IconButton aria-label="refresh" onClick={() => getJobHistory(true)} color="inherit">
-                        <Refresh />
-                    </IconButton>
-                    <IconButton aria-label="delete-all" onClick={() => {
-                        if (window.confirm('¿Seguro que deseas borrar todo el historial de jobs?')) {
-                            deleteAllJobs();
-                        }
-                    }} color="inherit">
-                        <DeleteSweep />
-                    </IconButton>
+                    <span title="Refresh job history">
+                        <IconButton aria-label="refresh" onClick={() => getJobHistory(true)} color="inherit">
+                            <Refresh />
+                        </IconButton>
+                    </span>
+                    <span title="Delete all job history">
+                        <IconButton aria-label="delete-all" onClick={() => {
+                            if (window.confirm('Are you sure you want to delete all job history?')) {
+                                deleteAllJobs();
+                            }
+                        }} color="inherit">
+                            <DeleteSweep />
+                        </IconButton>
+                    </span>
                 </Toolbar>
             </AppBar>
             <Toolbar />
@@ -350,13 +354,15 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                                     {jobs.map(job => (
                                         <ListItem key={job.job_id} button
                                             secondaryAction={
-                                                <IconButton edge="end" aria-label="delete" onClick={async () => {
-                                                    if (window.confirm(`¿Seguro que deseas borrar el job?\nJob ID: ${job.job_id}`)) {
-                                                        await deleteJob(job.job_id);
-                                                    }
-                                                }}>
-                                                    <Delete />
-                                                </IconButton>
+                                                <span title={`Delete job ${job.job_id}`}>
+                                                    <IconButton edge="end" aria-label="delete" onClick={async () => {
+                                                        if (window.confirm(`Are you sure you want to delete this job?\nJob ID: ${job.job_id}`)) {
+                                                            await deleteJob(job.job_id);
+                                                        }
+                                                    }}>
+                                                        <Delete />
+                                                    </IconButton>
+                                                </span>
                                             }
                                             // onClick can be used for future details dialog, but no alert for delete
                                         >
