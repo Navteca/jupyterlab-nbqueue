@@ -25,6 +25,7 @@ export class NBQueueSideBarWidget extends ReactWidget {
   constructor(bucket: string) {
     super()
     this.bucket = bucket
+    this.node.style.minWidth = '600px';
   }
 
   /**

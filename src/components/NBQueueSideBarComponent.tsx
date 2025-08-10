@@ -13,6 +13,8 @@ import Done from '@mui/icons-material/Done';
 import Error from '@mui/icons-material/Error';
 import Pending from '@mui/icons-material/Pending';
 import { Delete } from '@mui/icons-material';
+import { CircularProgress, Box } from '@mui/material';
+
 // import Close from '@mui/icons-material/Close';
 
 import React from 'react'
@@ -52,9 +54,72 @@ interface NBQueueSideBarComponentProps {
  * NBQueue workflows including status indicators and job controls.
  */
 const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props): JSX.Element => {
+    // Estado para mostrar el spinner de carga
+    const [loading, setLoading] = React.useState(false);
+    // Escucha el evento global para forzar actualización del historial
+    React.useEffect(() => {
+        const handler = () => {
+            getJobHistory(true);
+        };
+        window.addEventListener('nbqueue-job-submitted', handler);
+        return () => {
+            window.removeEventListener('nbqueue-job-submitted', handler);
+        };
+    }, []);
     // Component state management
     const [dense] = React.useState(true)
     const [jobs, setJobs] = React.useState<JobHistory[]>([])
+
+    // Autorefresh progresivo
+    const minDelay = 2000; // 2s
+    const maxDelay = 30000; // 30s
+    const [refreshDelay, setRefreshDelay] = React.useState(minDelay);
+    const refreshTimeout = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Función para verificar si todos los jobs han finalizado
+    const allJobsFinished = (jobs: JobHistory[]) =>
+        jobs.length === 0 || jobs.every(job => {
+            const status = job.status?.toLowerCase();
+            return status === 'succeeded' || status === 'failed';
+        });
+
+    // Función principal de autorefresh
+    const progressiveRefresh = async () => {
+        await getJobHistory();
+        if (!allJobsFinished(jobs)) {
+            // Incrementa el delay progresivamente
+            setRefreshDelay(prev => Math.min(prev * 2, maxDelay));
+        } else {
+            // Reinicia el delay si todos terminaron
+            setRefreshDelay(minDelay);
+        }
+    };
+
+    // Efecto para manejar el autorefresh progresivo
+    React.useEffect(() => {
+        // Limpia el timeout anterior
+        if (refreshTimeout.current) {
+            clearTimeout(refreshTimeout.current);
+        }
+        // Si no han terminado todos los jobs, programa el siguiente refresh
+        if (!allJobsFinished(jobs)) {
+            refreshTimeout.current = setTimeout(() => {
+                progressiveRefresh();
+            }, refreshDelay);
+        }
+        // Cleanup al desmontar
+        return () => {
+            if (refreshTimeout.current) {
+                clearTimeout(refreshTimeout.current);
+            }
+        };
+    }, [jobs, refreshDelay]);
+
+    // Reinicia el ciclo de autorefresh al abrir el panel (cuando se monta)
+    React.useEffect(() => {
+        setRefreshDelay(minDelay);
+        getJobHistory();
+    }, []);
 //     const [selectedJob, setSelectedJob] = React.useState<JobHistory | null>(null);
 //     const [scroll, setScroll] = React.useState<DialogProps['scroll']>('paper');
 //     const [open, setOpen] = React.useState(false);
@@ -86,12 +151,16 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
       */
 
     // Fetch job history from /job-history endpoint
-    const getJobHistory = async () => {
+    const getJobHistory = async (resetDelay = false) => {
+        setLoading(true);
         try {
             const jobs = await requestAPI<JobHistory[]>('jobs', { method: 'GET' });
             setJobs(jobs);
+            if (resetDelay) setRefreshDelay(minDelay);
         } catch (error) {
             console.error('Error fetching job history:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -251,7 +320,7 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         NBQueue job history
                     </Typography>
-                    <IconButton aria-label="refresh" onClick={getJobHistory} color="inherit">
+                    <IconButton aria-label="refresh" onClick={() => getJobHistory(true)} color="inherit">
                         <Refresh />
                     </IconButton>
                     <IconButton aria-label="delete-all" onClick={() => {
@@ -269,58 +338,63 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                 overflowY: 'auto',
                 paddingBottom: 5
             }}>
-                <Grid container direction="row" justifyContent="space-between" alignItems="flex-start" rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
-                    <Grid item xs={12}>
-                        <nav aria-label="job history list">
-                            <List dense={dense}>
-                                {jobs.map(job => (
-                                    <ListItem key={job.job_id} button
-                                        secondaryAction={
-                                            <IconButton edge="end" aria-label="delete" onClick={async () => {
-                                                if (window.confirm(`¿Seguro que deseas borrar el job?\nJob ID: ${job.job_id}`)) {
-                                                    await deleteJob(job.job_id);
-                                                }
-                                            }}>
-                                                <Delete />
-                                            </IconButton>
-                                        }
-                                        // onClick can be used for future details dialog, but no alert for delete
-                                    >
-                                        <ListItemAvatar>
-                                            <Avatar sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
-                                                <AvatarStatusIcon status={job.status} />
-                                            </Avatar>
-                                        </ListItemAvatar>
-                                        <ListItemText
-                                            primary={job.job_id}
-                                            secondary={
-                                                <React.Fragment>
-                                                    <Typography
-                                                        sx={{ display: 'inline' }}
-                                                        component="span"
-                                                        variant="body2"
-                                                        color="text.primary"
-                                                    >
-                                                        {job.start_time ? `Started: ${job.start_time}` : ''}
-                                                    </Typography>
-                                                    {` — ${job.status}`}
-                                                    {job.error_message ? ` — Error: ${job.error_message}` : ''}
-                                                </React.Fragment>
+                {loading ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                        <CircularProgress />
+                    </Box>
+                ) : (
+                    <Grid container direction="row" justifyContent="space-between" alignItems="flex-start" rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+                        <Grid item xs={12}>
+                            <nav aria-label="job history list">
+                                <List dense={dense}>
+                                    {jobs.map(job => (
+                                        <ListItem key={job.job_id} button
+                                            secondaryAction={
+                                                <IconButton edge="end" aria-label="delete" onClick={async () => {
+                                                    if (window.confirm(`¿Seguro que deseas borrar el job?\nJob ID: ${job.job_id}`)) {
+                                                        await deleteJob(job.job_id);
+                                                    }
+                                                }}>
+                                                    <Delete />
+                                                </IconButton>
                                             }
-                                        />
+                                            // onClick can be used for future details dialog, but no alert for delete
+                                        >
+                                            <ListItemAvatar>
+                                                <Avatar sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
+                                                    <AvatarStatusIcon status={job.status} />
+                                                </Avatar>
+                                            </ListItemAvatar>
+                                            <ListItemText
+                                                primary={job.job_id}
+                                                secondary={
+                                                    <React.Fragment>
+                                                        <Typography
+                                                            sx={{ display: 'inline' }}
+                                                            component="span"
+                                                            variant="body2"
+                                                            color="text.primary"
+                                                        >
+                                                            {job.start_time ? `Started: ${job.start_time}` : ''}
+                                                        </Typography>
+                                                        {` — ${job.status}`}
+                                                        {job.error_message ? ` — Error: ${job.error_message}` : ''}
+                                                    </React.Fragment>
+                                                }
+                                            />
+                                        </ListItem>
+                                    ))}
+                                    <ListItem>
+                                        <ListItemText></ListItemText>
                                     </ListItem>
-                                ))}
-                                <ListItem>
-                                    <ListItemText></ListItemText>
-                                </ListItem>
-                            </List>
-                        </nav>
+                                </List>
+                            </nav>
+                        </Grid>
                     </Grid>
-                </Grid>
+                )}
             </Container>
             {/* Eliminado custom dialog, ahora ambos usan window.confirm para consistencia visual y UX */}
-
-          </React.Fragment >
+        </React.Fragment >
      );
 }
 

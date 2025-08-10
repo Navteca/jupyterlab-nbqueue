@@ -127,6 +127,11 @@ const NBQueueComponent: React.FC<NBQueueComponentProps> = (
                                    requestAPI<JobSubmissionResponse>('job', {
                                         method: 'POST',
                                         body: JSON.stringify(payload),
+                                   }).then((response) => {
+                                        if (isJobSubmissionSuccess(response)) {
+                                            window.dispatchEvent(new CustomEvent('nbqueue-job-submitted'));
+                                        }
+                                        return response;
                                    }),
                                    {
                                         pending: {
