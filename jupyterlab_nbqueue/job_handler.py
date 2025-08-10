@@ -573,39 +573,40 @@ class JobHandler(APIHandler):
                                                 notebook_file, owner, project, nbqueue_job_name,
                                                 image, conda_env, job_dir, cpu, ram, uid, gid)
 
-            # Save request and response in the database
-            session = self.SessionLocal()
-            try:
-                job_record = Job(
-                    job_id=getattr(response, "job_id", None),
-                    notebook_file=notebook_file,
-                    owner=owner,
-                    project=project,
-                    nbqueue_job_name=nbqueue_job_name,
-                    image=image,
-                    conda_env=conda_env,
-                    output_path=output_path,
-                    cpu=cpu,
-                    ram=ram,
-                    uid=uid,
-                    gid=gid,
-                    request_json=json.dumps(json_body),
-                    response_json=json.dumps({
-                        "success": getattr(response, "success", None),
-                        "job_id": getattr(response, "job_id", None),
-                        "kubectl_output": getattr(response, "kubectl_output", None),
-                        "error_message": getattr(response, "error_message", None)
-                    }),
-                    status="success" if getattr(response, "success", False) else "error",
-                    error_message=getattr(response, "error_message", None)
-                )
-                session.add(job_record)
-                session.commit()
-            except Exception as db_exc:
-                logger.error("Error saving job to database: {}", db_exc)
-                session.rollback()
-            finally:
-                session.close()
+            # Solo guardar el job si la respuesta fue exitosa y tiene job_id
+            if getattr(response, "success", False) and getattr(response, "job_id", None):
+                session = self.SessionLocal()
+                try:
+                    job_record = Job(
+                        job_id=getattr(response, "job_id", None),
+                        notebook_file=notebook_file,
+                        owner=owner,
+                        project=project,
+                        nbqueue_job_name=nbqueue_job_name,
+                        image=image,
+                        conda_env=conda_env,
+                        output_path=output_path,
+                        cpu=cpu,
+                        ram=ram,
+                        uid=uid,
+                        gid=gid,
+                        request_json=json.dumps(json_body),
+                        response_json=json.dumps({
+                            "success": getattr(response, "success", None),
+                            "job_id": getattr(response, "job_id", None),
+                            "kubectl_output": getattr(response, "kubectl_output", None),
+                            "error_message": getattr(response, "error_message", None)
+                        }),
+                        status="success",
+                        error_message=getattr(response, "error_message", None)
+                    )
+                    session.add(job_record)
+                    session.commit()
+                except Exception as db_exc:
+                    logger.error("Error saving job to database: {}", db_exc)
+                    session.rollback()
+                finally:
+                    session.close()
 
             # Build response with job metadata
             response_data = {
