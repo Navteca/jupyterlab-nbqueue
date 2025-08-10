@@ -55,6 +55,57 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
     // Component state management
     const [dense] = React.useState(true)
     const [jobs, setJobs] = React.useState<JobHistory[]>([])
+
+    // Autorefresh progresivo
+    const minDelay = 2000; // 2s
+    const maxDelay = 30000; // 30s
+    const [refreshDelay, setRefreshDelay] = React.useState(minDelay);
+    const refreshTimeout = React.useRef<NodeJS.Timeout | null>(null);
+
+    // Función para verificar si todos los jobs han finalizado
+    const allJobsFinished = (jobs: JobHistory[]) =>
+        jobs.length === 0 || jobs.every(job => {
+            const status = job.status?.toLowerCase();
+            return status === 'succeeded' || status === 'failed';
+        });
+
+    // Función principal de autorefresh
+    const progressiveRefresh = async () => {
+        await getJobHistory();
+        if (!allJobsFinished(jobs)) {
+            // Incrementa el delay progresivamente
+            setRefreshDelay(prev => Math.min(prev * 2, maxDelay));
+        } else {
+            // Reinicia el delay si todos terminaron
+            setRefreshDelay(minDelay);
+        }
+    };
+
+    // Efecto para manejar el autorefresh progresivo
+    React.useEffect(() => {
+        // Limpia el timeout anterior
+        if (refreshTimeout.current) {
+            clearTimeout(refreshTimeout.current);
+        }
+        // Si no han terminado todos los jobs, programa el siguiente refresh
+        if (!allJobsFinished(jobs)) {
+            refreshTimeout.current = setTimeout(() => {
+                progressiveRefresh();
+            }, refreshDelay);
+        }
+        // Cleanup al desmontar
+        return () => {
+            if (refreshTimeout.current) {
+                clearTimeout(refreshTimeout.current);
+            }
+        };
+    }, [jobs, refreshDelay]);
+
+    // Reinicia el ciclo de autorefresh al abrir el panel (cuando se monta)
+    React.useEffect(() => {
+        setRefreshDelay(minDelay);
+        getJobHistory();
+    }, []);
 //     const [selectedJob, setSelectedJob] = React.useState<JobHistory | null>(null);
 //     const [scroll, setScroll] = React.useState<DialogProps['scroll']>('paper');
 //     const [open, setOpen] = React.useState(false);
@@ -86,10 +137,11 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
       */
 
     // Fetch job history from /job-history endpoint
-    const getJobHistory = async () => {
+    const getJobHistory = async (resetDelay = false) => {
         try {
             const jobs = await requestAPI<JobHistory[]>('jobs', { method: 'GET' });
             setJobs(jobs);
+            if (resetDelay) setRefreshDelay(minDelay);
         } catch (error) {
             console.error('Error fetching job history:', error);
         }
@@ -251,7 +303,7 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                     <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                         NBQueue job history
                     </Typography>
-                    <IconButton aria-label="refresh" onClick={getJobHistory} color="inherit">
+                    <IconButton aria-label="refresh" onClick={() => getJobHistory(true)} color="inherit">
                         <Refresh />
                     </IconButton>
                     <IconButton aria-label="delete-all" onClick={() => {
