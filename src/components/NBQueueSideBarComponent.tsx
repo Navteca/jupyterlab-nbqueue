@@ -65,17 +65,17 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
       * @returns JSX element with appropriate status icon
       */
     function AvatarStatusIcon({ status }: { status: string }) {
-        switch (status) {
-            case 'Succeeded':
-                return (<Done />)
+        switch (status?.toLowerCase()) {
             case 'Running':
-                return (<Pending />)
-            case 'Failed':
-                return (<Error />)
+                return (<Pending color="primary" />);
             case 'Pending':
-                return (<Pending />)
+                return (<Pending color="primary" />);
+            case 'Succeeded':
+                return (<Done style={{ color: 'green' }} />);
+            case 'Failed':
+                return (<Error color="error" />);
             default:
-                return (<Error />)
+                return (<Error color="disabled" />);
         }
     }
 
