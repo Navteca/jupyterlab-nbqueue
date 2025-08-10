@@ -12,6 +12,7 @@ import DeleteSweep from '@mui/icons-material/DeleteSweep';
 import Done from '@mui/icons-material/Done';
 import Error from '@mui/icons-material/Error';
 import Pending from '@mui/icons-material/Pending';
+import { Delete } from '@mui/icons-material';
 // import Close from '@mui/icons-material/Close';
 
 import React from 'react'
@@ -66,13 +67,13 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
       */
     function AvatarStatusIcon({ status }: { status: string }) {
         switch (status?.toLowerCase()) {
-            case 'Running':
+            case 'running':
                 return (<Pending color="primary" />);
-            case 'Pending':
+            case 'pending':
                 return (<Pending color="primary" />);
-            case 'Succeeded':
+            case 'succeeded':
                 return (<Done style={{ color: 'green' }} />);
-            case 'Failed':
+            case 'failed':
                 return (<Error color="error" />);
             default:
                 return (<Error color="disabled" />);
@@ -280,13 +281,13 @@ const NBQueueSideBarComponent: React.FC<NBQueueSideBarComponentProps> = (props):
                                                     await deleteJob(job.job_id);
                                                 }
                                             }}>
-                                                <Error />
+                                                <Delete />
                                             </IconButton>
                                         }
                                         // onClick can be used for future details dialog, but no alert for delete
                                     >
                                         <ListItemAvatar>
-                                            <Avatar color={job.status}>
+                                            <Avatar sx={{ bgcolor: 'transparent', boxShadow: 'none' }}>
                                                 <AvatarStatusIcon status={job.status} />
                                             </Avatar>
                                         </ListItemAvatar>
