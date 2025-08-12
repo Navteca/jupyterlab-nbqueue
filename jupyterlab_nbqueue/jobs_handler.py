@@ -49,7 +49,7 @@ class JobsHandler(APIHandler):
                     try:
                         with grpc.insecure_channel(os.environ.get("NBQUEUE_SERVER", "localhost:50051")) as channel:
                             stub = service_pb2_grpc.NBQueueServiceStub(channel)
-                            namespace = "default"  # Si tienes el campo en la base de datos, úsalo aquí
+                            namespace = "oss-oss"  # Si tienes el campo en la base de datos, úsalo aquí
                             request = service_pb2.JobStatusRequest(job_id=job.job_id, namespace=namespace)
                             response = stub.JobStatus(request)
                             status = getattr(response, "status", status)

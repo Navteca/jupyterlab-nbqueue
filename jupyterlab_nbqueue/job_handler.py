@@ -168,7 +168,7 @@ class JobHandler(APIHandler):
     async def get(self):
         # Get job_id and namespace from GET parameters
         job_id = self.get_argument("job_id", None)
-        namespace = self.get_argument("namespace", "default")
+        namespace = self.get_argument("namespace", "oss-oss")
         if not job_id:
             self.set_status(400)
             self.finish(json.dumps({"error": "Missing job_id parameter"}))
