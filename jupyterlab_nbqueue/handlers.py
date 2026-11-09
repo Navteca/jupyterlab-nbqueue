@@ -1,3 +1,5 @@
+import base64
+import ecdsa 
 import json
 import tornado
 import shlex
@@ -5,11 +7,17 @@ import sqlalchemy
 import subprocess
 import importlib.resources as pkg_resources
 
-from shutil import which
+from dotenv import load_dotenv
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
+from shutil import which
 
-from .db_handler import DBHandler, Runs
+from .db_handler import DBHandler, Runs, Subscriptions
+
+load_dotenv()
+
+class CustomError(Exception):
+    pass
 
 class RouteHandler(APIHandler):
     db = DBHandler()
@@ -22,6 +30,15 @@ class RouteHandler(APIHandler):
                 runs_list.append(run.serialize())
         return runs_list
         
+
+    def generate_vapid_keys(self):
+        pri = ecdsa.SigningKey.generate(curve=ecdsa.NIST256p)
+        pub = pri.get_verifying_key()
+        keys = {
+        "private" : base64.urlsafe_b64encode(pri.to_string()).decode("utf-8").strip("="),
+        "public" : base64.urlsafe_b64encode(b"\x04" + pub.to_string()).decode("utf-8").strip("=")
+        }
+        self.log.info(keys)
 
     @tornado.web.authenticated  # type: ignore
     def get(self):
@@ -36,7 +53,7 @@ class RouteHandler(APIHandler):
     def post(self):
         try:
             request_data = self.get_json_body()
-            notebook = request_data.get('notebook', None)                
+            notebook = request_data.get('notebook')
             if notebook:
                 with pkg_resources.path('jupyterlab_nbqueue', 'cmd_launcher.py') as p:
                     cmd_split = shlex.split(f"{which('python')} {p} {notebook}")
@@ -91,12 +108,39 @@ class RouteHandler(APIHandler):
         else:
             self.finish(json.dumps(message))
 
+class PushSubscriptionsHandler(APIHandler):
+    db = DBHandler()
+
+    @tornado.web.authenticated
+    def post(self):
+        try:
+            request_data = self.get_json_body()
+            subscription_json = request_data.get('subscription_json', None)
+            if subscription_json:
+                with self.db.get_session() as session:
+                    new_subscription = Subscriptions(pid='S001', info=subscription_json)
+                    subscription = session.query(Subscriptions).filter(Subscriptions.pid == 'S001').first()
+                    if subscription:
+                        session.delete(subscription)
+                        session.commit()
+                    session.add(new_subscription)
+                    session.commit()
+                    message = { "status": "success" }
+            else:
+                raise CustomError('Missing subscription info.')            
+        except sqlalchemy.exc.IntegrityError as e:   # type: ignore
+            self.log.error(f'Integrity Check failed => {e}')
+        except Exception as e:
+            self.log.error(f"There has been an error deleting downloaded => {e}")
+        else:
+            self.finish(json.dumps(message))
 
 def setup_handlers(web_app):
     host_pattern = ".*$"
 
     base_url = web_app.settings["base_url"]
     handlers = [
-        (url_path_join(base_url, "jupyterlab-nbqueue", "run"), RouteHandler)
+        (url_path_join(base_url, "jupyterlab-nbqueue", "run"), RouteHandler),
+        (url_path_join(base_url, "jupyterlab-nbqueue", "subscriptions"), PushSubscriptionsHandler)
     ]
     web_app.add_handlers(host_pattern, handlers)

@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-nbqueue",
-  "version": "0.1.5",
+  "version": "0.1.19",
   "description": "A JupyterLab extension for queuing notebooks executions.",
   "keywords": [
     "jupyter",

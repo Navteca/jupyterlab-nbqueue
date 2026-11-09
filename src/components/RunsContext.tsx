@@ -58,9 +58,27 @@ const RunProvider: React.FC<RunProviderProps> = ({ children }) => {
     }
   };
 
+  let timeoutIteraion = 1;
+  const setQueue = (items: any[]): void => {
+    if (items.filter(item => item.status === 'Running').length) {
+      setTimeout(() => {
+        (async () => {
+          getRunsList();
+        })();
+      }, 5000 * Math.pow(2, timeoutIteraion - 1));
+      timeoutIteraion++;
+    } else {
+      timeoutIteraion = 1;
+    }
+  };
+
   const getRunsList = async (): Promise<void> => {
     const response = await requestAPI<any>('run');
     setRun(response.reverse());
+    timeoutIteraion = 1;
+    if (response.filter((item: any) => item.status === 'Running').length) {
+      setQueue(response);
+    }
   };
 
   return (
